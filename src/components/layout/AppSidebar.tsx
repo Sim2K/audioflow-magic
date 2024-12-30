@@ -1,4 +1,4 @@
-import { Home, Settings, GitFlow } from "lucide-react";
+import { Home, Settings, GitBranch } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,7 +13,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 const menuItems = [
   { title: "Home", icon: Home, path: "/" },
-  { title: "Flows", icon: GitFlow, path: "/flows" },
+  { title: "Flows", icon: GitBranch, path: "/flows" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
