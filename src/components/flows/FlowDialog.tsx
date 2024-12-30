@@ -37,7 +37,7 @@ export function FlowDialog({
     defaultValues: editingFlow || {
       name: "",
       endpoint: "",
-      format: "{ 'summary': { 'title': '', 'content': '' } }",
+      format: '{ "summary": { "title": "", "content": "" } }',
       prompt: "Summarize the following transcript: {transcript}",
     },
   });

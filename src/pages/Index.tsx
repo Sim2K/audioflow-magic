@@ -14,6 +14,7 @@ import { getFlows } from "@/utils/flowManager";
 import { Flow } from "@/utils/storage";
 import { AudioRecorder } from "@/utils/audioRecorder";
 import { RecordingResults } from "@/components/recorder/RecordingResults";
+import { transcribeAudio } from "@/utils/openai";
 
 const audioRecorder = new AudioRecorder();
 
@@ -33,27 +34,48 @@ const Index = () => {
     if (!selectedFlow) return;
 
     try {
-      // Mock transcription for now - in reality, you'd call Whisper API here
-      const mockTranscript = "This is a mock transcript of the recording.";
-      setTranscript(mockTranscript);
+      // Call Whisper API to transcribe the audio
+      const transcript = await transcribeAudio(audioBlob);
+      setTranscript(transcript);
 
-      // Mock AI response based on the flow format
-      const mockResponse = JSON.parse(selectedFlow.format);
-      setResponse(mockResponse);
+      // Process the transcript according to the flow format
+      let flowFormat;
+      try {
+        flowFormat = JSON.parse(selectedFlow.format);
+      } catch (error) {
+        console.error('Error parsing flow format:', error);
+        throw new Error('Invalid flow format. Please check the flow configuration.');
+      }
+
+      const response = {
+        ...flowFormat,
+        transcript
+      };
+      setResponse(response);
 
       // Save to localStorage for transcript history
-      const transcriptHistory = JSON.parse(
-        localStorage.getItem("transcripts") || "[]"
-      );
+      let transcriptHistory;
+      try {
+        transcriptHistory = JSON.parse(
+          localStorage.getItem("transcripts") || "[]"
+        );
+      } catch (error) {
+        console.error('Error parsing transcript history:', error);
+        transcriptHistory = [];
+      }
       transcriptHistory.push({
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
         flowId: selectedFlow.id,
         flowName: selectedFlow.name,
-        transcript: mockTranscript,
-        response: mockResponse,
+        transcript,
+        response,
       });
-      localStorage.setItem("transcripts", JSON.stringify(transcriptHistory));
+      try {
+        localStorage.setItem("transcripts", JSON.stringify(transcriptHistory));
+      } catch (error) {
+        console.error('Error saving transcript history:', error);
+      }
 
       toast({
         title: "Processing completed",
@@ -63,7 +85,7 @@ const Index = () => {
       console.error("Error processing recording:", error);
       toast({
         title: "Error",
-        description: "Failed to process the recording.",
+        description: error instanceof Error ? error.message : "Failed to process the recording.",
         variant: "destructive",
       });
     }
@@ -100,8 +122,8 @@ const Index = () => {
     if (!isRecording) return;
     
     try {
+      setIsRecording(false); // Set this first to prevent multiple stop attempts
       const audioBlob = await audioRecorder.stopRecording();
-      setIsRecording(false);
       toast({
         title: "Recording stopped",
         description: "Processing your recording...",
@@ -111,7 +133,7 @@ const Index = () => {
       console.error("Error stopping recording:", error);
       toast({
         title: "Error",
-        description: "Failed to stop recording.",
+        description: error instanceof Error ? error.message : "Failed to stop recording.",
         variant: "destructive",
       });
       setIsRecording(false);
@@ -153,10 +175,10 @@ const Index = () => {
           <div className="relative">
             <Button
               size="lg"
-              className={`rounded-full p-8 ${
+              className={`rounded-full p-8 cursor-pointer transition-all duration-200 active:scale-95 ${
                 isRecording
-                  ? "bg-red-500 hover:bg-red-600"
-                  : "bg-purple-500 hover:bg-purple-600"
+                  ? "bg-red-500 hover:bg-red-600 hover:shadow-lg"
+                  : "bg-purple-500 hover:bg-purple-600 hover:shadow-lg"
               }`}
               onClick={isRecording ? stopRecording : startRecording}
               disabled={!selectedFlow}
@@ -168,7 +190,7 @@ const Index = () => {
               )}
             </Button>
             {isRecording && (
-              <div className="absolute inset-0 rounded-full animate-pulse-ring border-2 border-red-500" />
+              <div className="absolute inset-0 rounded-full animate-pulse-ring border-2 border-red-500 pointer-events-none" />
             )}
           </div>
           <p className="text-sm text-muted-foreground">
