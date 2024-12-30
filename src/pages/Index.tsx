@@ -97,9 +97,15 @@ const Index = () => {
   };
 
   const stopRecording = async () => {
+    if (!isRecording) return;
+    
     try {
       const audioBlob = await audioRecorder.stopRecording();
       setIsRecording(false);
+      toast({
+        title: "Recording stopped",
+        description: "Processing your recording...",
+      });
       await processRecording(audioBlob);
     } catch (error) {
       console.error("Error stopping recording:", error);

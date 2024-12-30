@@ -30,8 +30,16 @@ export class AudioRecorder {
 
       this.mediaRecorder.onstop = () => {
         const audioBlob = new Blob(this.audioChunks, { type: "audio/mp3" });
+        // Stop all tracks in the stream
         this.mediaRecorder?.stream.getTracks().forEach((track) => track.stop());
         resolve(audioBlob);
+      };
+
+      // Ensure we get the final chunk of data
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
       };
 
       this.mediaRecorder.stop();
