@@ -12,18 +12,15 @@ import { Mic, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getFlows } from "@/utils/flowManager";
 import { Flow } from "@/utils/storage";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { AudioRecorder } from "@/utils/audioRecorder";
+import { RecordingResults } from "@/components/recorder/RecordingResults";
+
+const audioRecorder = new AudioRecorder();
 
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [flows, setFlows] = useState<Flow[]>([]);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [transcript, setTranscript] = useState<string>("");
   const [response, setResponse] = useState<any>(null);
   const { toast } = useToast();
@@ -31,52 +28,6 @@ const Index = () => {
   useEffect(() => {
     setFlows(getFlows());
   }, []);
-
-  const startRecording = async () => {
-    if (!selectedFlow) {
-      toast({
-        title: "Error",
-        description: "Please select a flow before recording.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: BlobPart[] = [];
-
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: "audio/mp3" });
-        await processRecording(blob);
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      toast({
-        title: "Recording started",
-        description: "Your audio is now being recorded.",
-      });
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      toast({
-        title: "Error",
-        description: "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-      setIsRecording(false);
-    }
-  };
 
   const processRecording = async (audioBlob: Blob) => {
     if (!selectedFlow) return;
@@ -91,7 +42,9 @@ const Index = () => {
       setResponse(mockResponse);
 
       // Save to localStorage for transcript history
-      const transcriptHistory = JSON.parse(localStorage.getItem("transcripts") || "[]");
+      const transcriptHistory = JSON.parse(
+        localStorage.getItem("transcripts") || "[]"
+      );
       transcriptHistory.push({
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
@@ -113,6 +66,49 @@ const Index = () => {
         description: "Failed to process the recording.",
         variant: "destructive",
       });
+    }
+  };
+
+  const startRecording = async () => {
+    if (!selectedFlow) {
+      toast({
+        title: "Error",
+        description: "Please select a flow before recording.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await audioRecorder.startRecording();
+      setIsRecording(true);
+      toast({
+        title: "Recording started",
+        description: "Your audio is now being recorded.",
+      });
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      toast({
+        title: "Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      const audioBlob = await audioRecorder.stopRecording();
+      setIsRecording(false);
+      await processRecording(audioBlob);
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+      toast({
+        title: "Error",
+        description: "Failed to stop recording.",
+        variant: "destructive",
+      });
+      setIsRecording(false);
     }
   };
 
@@ -179,31 +175,7 @@ const Index = () => {
         </CardContent>
       </Card>
 
-      {(transcript || response) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="single" collapsible>
-              <AccordionItem value="transcript">
-                <AccordionTrigger>Transcript</AccordionTrigger>
-                <AccordionContent>
-                  <p className="whitespace-pre-wrap">{transcript}</p>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="response">
-                <AccordionTrigger>AI Response</AccordionTrigger>
-                <AccordionContent>
-                  <pre className="whitespace-pre-wrap overflow-x-auto">
-                    {JSON.stringify(response, null, 2)}
-                  </pre>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </CardContent>
-        </Card>
-      )}
+      <RecordingResults transcript={transcript} response={response} />
     </div>
   );
 };
