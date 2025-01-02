@@ -25,6 +25,7 @@ const Index = () => {
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [transcript, setTranscript] = useState<string>("");
   const [response, setResponse] = useState<any>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,6 +60,7 @@ const Index = () => {
         flowName: selectedFlow.name,
         transcript,
         response: processedResponse,
+        audioUrl: audioUrl // Save the audio URL with the transcript
       });
       try {
         localStorage.setItem("transcripts", JSON.stringify(transcriptHistory));
@@ -93,6 +95,7 @@ const Index = () => {
     try {
       await audioRecorder.startRecording();
       setIsRecording(true);
+      setAudioUrl(null);
       toast({
         title: "Recording started",
         description: "Your audio is now being recorded.",
@@ -113,6 +116,11 @@ const Index = () => {
     try {
       setIsRecording(false); // Set this first to prevent multiple stop attempts
       const audioBlob = await audioRecorder.stopRecording();
+
+      // Create download URL for the audio
+      const url = URL.createObjectURL(audioBlob);
+      setAudioUrl(url);
+
       toast({
         title: "Recording stopped",
         description: "Processing your recording...",
@@ -182,6 +190,15 @@ const Index = () => {
               <div className="absolute inset-0 rounded-full animate-pulse-ring border-2 border-red-500 pointer-events-none" />
             )}
           </div>
+          {audioUrl && (
+            <a
+              href={audioUrl}
+              download="recording.mp3"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary hover:text-primary/80"
+            >
+              Download Recording
+            </a>
+          )}
           <p className="text-sm text-muted-foreground">
             {!selectedFlow
               ? "Select a flow to start recording"

@@ -7,6 +7,7 @@ import { MainLayout } from "./components/layout/MainLayout";
 import Index from "./pages/Index";
 import Flows from "./pages/Flows";
 import Settings from "./pages/Settings";
+import Transcripts from "./pages/Transcripts";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/flows" element={<Flows />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/transcripts" element={<Transcripts />} />
           </Routes>
         </MainLayout>
       </BrowserRouter>
