@@ -98,7 +98,7 @@ export function FlowDialog({
                       className="font-mono resize-y min-h-[50px]"
                     />
                   </FormControl>
-                  <FormDescription>JSON format for the response</FormDescription>
+                  <FormDescription>JSON format for the response - Leave as is if you don't know what you're doing</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
