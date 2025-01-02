@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { Flow } from "@/utils/storage";
 
@@ -37,8 +38,8 @@ export function FlowDialog({
     defaultValues: editingFlow || {
       name: "",
       endpoint: "",
-      format: '{ "summary": { "title": "", "content": "" } }',
-      prompt: "Summarize the following transcript: {transcript}",
+      format: '{ "details": { "title": "", "summary": "", "valid_points": [] } }',
+      prompt: "Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.",
     },
   });
 
@@ -48,7 +49,7 @@ export function FlowDialog({
         <DialogHeader>
           <DialogTitle>{editingFlow ? "Edit Flow" : "Create Flow"}</DialogTitle>
           <DialogDescription>
-            Configure your automation flow here. Click save when you're done.
+            Configure your automation flow here.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -62,7 +63,6 @@ export function FlowDialog({
                   <FormControl>
                     <Input placeholder="My Flow" {...field} />
                   </FormControl>
-                  <FormDescription>A name to identify your flow</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -80,7 +80,7 @@ export function FlowDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    Where to send the processed data
+                    Where to send the processed data - Future functionality - Placeholder
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -93,7 +93,10 @@ export function FlowDialog({
                 <FormItem>
                   <FormLabel>Response Format</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Textarea 
+                      {...field} 
+                      className="font-mono resize-y min-h-[50px]"
+                    />
                   </FormControl>
                   <FormDescription>JSON format for the response</FormDescription>
                   <FormMessage />
@@ -107,10 +110,14 @@ export function FlowDialog({
                 <FormItem>
                   <FormLabel>Prompt</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Textarea 
+                      {...field} 
+                      className="resize-y min-h-[100px]"
+                      placeholder="Prompt template for OpenAI (use {transcript} for the transcribed text)"
+                    />
                   </FormControl>
                   <FormDescription>
-                    Prompt template for OpenAI (use {"{transcript}"} for the
+                    Prompt template for the AI (use {"{transcript}"} to refer to the
                     transcribed text)
                   </FormDescription>
                   <FormMessage />
