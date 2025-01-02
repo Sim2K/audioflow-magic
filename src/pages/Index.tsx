@@ -34,24 +34,12 @@ const Index = () => {
     if (!selectedFlow) return;
 
     try {
-      // Call Whisper API to transcribe the audio
-      const transcript = await transcribeAudio(audioBlob);
+      // Call Whisper API to transcribe the audio and process with GPT-4
+      const { transcript, processedResponse } = await transcribeAudio(audioBlob, selectedFlow);
       setTranscript(transcript);
 
-      // Process the transcript according to the flow format
-      let flowFormat;
-      try {
-        flowFormat = JSON.parse(selectedFlow.format);
-      } catch (error) {
-        console.error('Error parsing flow format:', error);
-        throw new Error('Invalid flow format. Please check the flow configuration.');
-      }
-
-      const response = {
-        ...flowFormat,
-        transcript
-      };
-      setResponse(response);
+      // Use the processed response directly
+      setResponse(processedResponse);
 
       // Save to localStorage for transcript history
       let transcriptHistory;
@@ -69,7 +57,7 @@ const Index = () => {
         flowId: selectedFlow.id,
         flowName: selectedFlow.name,
         transcript,
-        response,
+        response: processedResponse,
       });
       try {
         localStorage.setItem("transcripts", JSON.stringify(transcriptHistory));
@@ -144,7 +132,7 @@ const Index = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Audio Recorder</CardTitle>
+          <CardTitle>AI Audio Flow 1.0</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-4">
           <Select

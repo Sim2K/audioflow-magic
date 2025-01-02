@@ -1,87 +1,110 @@
 export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
+  private isRecording: boolean = false;
+  private chunkInterval: number = 250; // Collect chunks more frequently
+  private lastChunkTime: number = 0;
 
   async startRecording(): Promise<void> {
     try {
-      if (this.mediaRecorder?.state === "recording") {
+      if (this.isRecording || this.mediaRecorder?.state === "recording") {
         return; // Already recording
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm'
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          channelCount: 1, // Mono audio
+          sampleRate: 22050, // Lower sample rate, good for voice
+          echoCancellation: true,
+          noiseSuppression: true,
+        } 
       });
+
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 56000 // ~56 kbps for optimal size/quality balance
+      });
+
       this.audioChunks = [];
+      this.isRecording = true;
+      this.lastChunkTime = Date.now();
 
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
+          this.lastChunkTime = Date.now();
         }
       };
 
-      // Start recording and request data every 1 second
-      this.mediaRecorder.start(1000);
+      this.mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        this.cleanup();
+      };
+
+      // Start recording and request data more frequently
+      this.mediaRecorder.start(this.chunkInterval);
     } catch (error) {
       console.error("Error accessing microphone:", error);
+      this.cleanup();
       throw new Error("Could not access microphone. Please check permissions.");
     }
   }
 
+  private cleanup(): void {
+    if (this.mediaRecorder?.stream) {
+      this.mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+    }
+    this.mediaRecorder = null;
+    this.audioChunks = [];
+    this.isRecording = false;
+    this.lastChunkTime = 0;
+  }
+
   stopRecording(): Promise<Blob> {
     return new Promise((resolve, reject) => {
-      if (!this.mediaRecorder) {
+      if (!this.isRecording || !this.mediaRecorder) {
         reject(new Error("No recording in progress"));
         return;
       }
 
-      if (this.mediaRecorder.state !== "recording") {
-        reject(new Error("Recording is not active"));
-        return;
+      // Check if we've received chunks recently
+      const timeSinceLastChunk = Date.now() - this.lastChunkTime;
+      if (timeSinceLastChunk > 5000) { // 5 seconds threshold
+        console.warn('Long gap since last chunk, recording may be stale');
       }
 
-      const cleanup = () => {
-        if (this.mediaRecorder?.stream) {
-          this.mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-        }
-        this.mediaRecorder = null;
-        this.audioChunks = [];
-      };
-
-      const handleDataAvailable = (event: BlobEvent) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-
-      this.mediaRecorder.ondataavailable = handleDataAvailable;
-
-      this.mediaRecorder.onstop = () => {
+      const handleStop = () => {
         try {
+          if (this.audioChunks.length === 0) {
+            throw new Error("No audio data collected");
+          }
+          
           const audioBlob = new Blob(this.audioChunks, { 
-            type: 'audio/webm' 
+            type: 'audio/webm;codecs=opus'
           });
-          cleanup();
+          this.cleanup();
           resolve(audioBlob);
         } catch (error) {
-          cleanup();
+          this.cleanup();
           reject(error);
         }
       };
 
       try {
-        // Request any remaining data
-        this.mediaRecorder.requestData();
-        // Stop the recording
-        this.mediaRecorder.stop();
+        if (this.mediaRecorder.state === "recording") {
+          this.mediaRecorder.onstop = handleStop;
+          this.mediaRecorder.stop();
+        } else {
+          handleStop();
+        }
       } catch (error) {
-        cleanup();
+        this.cleanup();
         reject(error);
       }
     });
   }
 
-  isRecording(): boolean {
-    return this.mediaRecorder?.state === "recording";
+  isCurrentlyRecording(): boolean {
+    return this.isRecording && !!this.mediaRecorder;
   }
 }

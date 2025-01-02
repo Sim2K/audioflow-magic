@@ -1,29 +1,32 @@
 import { StorageKeys } from './storage';
+import { Flow } from './storage';
 
-export interface WhisperResponse {
+const DEFAULT_COMPLETION_ENDPOINT = 'v1/completions';
+
+interface WhisperResponse {
   text: string;
 }
 
-export async function transcribeAudio(audioBlob: Blob): Promise<string> {
+export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ transcript: string; processedResponse: any }> {
   const apiKey = localStorage.getItem(StorageKeys.OPENAI_API_KEY);
   if (!apiKey) {
     throw new Error('OpenAI API key not found. Please add it in Settings.');
   }
 
-  // Convert WebM to mp3 format using Web Audio API
-  const audioData = await audioBlob.arrayBuffer();
-  const audioContext = new AudioContext();
-  const audioBuffer = await audioContext.decodeAudioData(audioData);
-  
-  // Create MP3 blob
-  const mp3Blob = await convertToMp3(audioBuffer);
-  
-  // Create form data
-  const formData = new FormData();
-  formData.append('file', mp3Blob, 'audio.mp3');
-  formData.append('model', 'whisper-1');
-
   try {
+    // Convert WebM to mp3 format using Web Audio API
+    const audioData = await audioBlob.arrayBuffer();
+    const audioContext = new AudioContext();
+    const audioBuffer = await audioContext.decodeAudioData(audioData);
+    
+    // Create MP3 blob
+    const mp3Blob = await convertToMp3(audioBuffer);
+    
+    // First step: Transcribe audio using Whisper
+    const formData = new FormData();
+    formData.append('file', mp3Blob, 'audio.mp3');
+    formData.append('model', 'whisper-1');
+
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
@@ -38,9 +41,72 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
     }
 
     const data: WhisperResponse = await response.json();
-    return data.text;
+    const transcript = data.text;
+
+    // Second step: Process transcript with GPT-4
+    // Use flow.endpoint if provided, otherwise use default
+    const endpoint = flow.endpoint || DEFAULT_COMPLETION_ENDPOINT;
+    
+    const completionResponse = await fetch(`https://api.openai.com/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: [
+              {
+                text: "You are a very helpful assistant. You are good at creating summaries from transcriptions and following user's requests/actions/tasks to action on translations given. You think step by step to make the best use of the JSON schema given to use to respond to the user.",
+                type: "text"
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: [
+              {
+                text: `Read the {Instructions} which will instruct you on how to work with the given {transcript}. Respond using the format shown in the {JSON Template}.
+
+Instructions:
+${flow.prompt}
+
+'Transcript':
+${transcript}
+
+'JSON Template':
+${flow.format}`,
+                type: "text"
+              }
+            ]
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 1,
+        max_completion_tokens: 2048,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0
+      })
+    });
+
+    if (!completionResponse.ok) {
+      const error = await completionResponse.json();
+      throw new Error(error.error?.message || 'Failed to process transcript');
+    }
+
+    const completionData = await completionResponse.json();
+    const processedResponse = JSON.parse(completionData.choices[0].message.content);
+
+    return {
+      transcript,
+      processedResponse
+    };
   } catch (error) {
-    console.error('Transcription error:', error);
+    console.error('Error in transcription process:', error);
     throw error;
   }
 }
