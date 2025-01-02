@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -13,8 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { getFlows } from "@/utils/flowManager";
 import { Flow } from "@/utils/storage";
 import { AudioRecorder } from "@/utils/audioRecorder";
-import { RecordingResults } from "@/components/recorder/RecordingResults";
 import { transcribeAudio } from "@/utils/openai";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import JsonViewer from "@/components/JsonViewer";
 
 const audioRecorder = new AudioRecorder();
 
@@ -191,7 +192,62 @@ const Index = () => {
         </CardContent>
       </Card>
 
-      <RecordingResults transcript={transcript} response={response} />
+      <Tabs defaultValue="transcript" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="transcript">Transcript</TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="response">AI Response</TabsTrigger>
+        </TabsList>
+        <TabsContent value="transcript" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Transcript</CardTitle>
+              <CardDescription>
+                The raw transcript from your audio recording.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {transcript || "No transcript available"}
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="details" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Details</CardTitle>
+              <CardDescription>
+                A user-friendly view of the AI-processed response.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {response ? (
+                <JsonViewer data={response} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No processed response available
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="response" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Response</CardTitle>
+              <CardDescription>
+                The complete AI-processed response in JSON format.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {response ? JSON.stringify(response, null, 2) : "No response available"}
+              </pre>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
