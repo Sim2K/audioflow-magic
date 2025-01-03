@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Mic, GitBranch, Settings, FileText, User, Menu } from "lucide-react";
+import { Mic, GitBranch, Settings, FileText, User, Menu, Home, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -16,9 +16,11 @@ export function AppSidebar() {
   };
 
   const menuItems = [
-    { to: "/", icon: Mic, label: "Record", bgColor: "bg-purple-600" },
-    { to: "/flows", icon: GitBranch, label: "Flows", bgColor: "bg-purple-500" },
-    { to: "/transcripts", icon: FileText, label: "Transcripts" },
+    { to: "/", icon: Home, label: "Home", bgColor: "bg-purple-700" },
+    { to: "/features", icon: Sparkles, label: "Features", bgColor: "bg-purple-600" },
+    { to: "/record", icon: Mic, label: "Record", bgColor: "bg-purple-500" },
+    { to: "/flows", icon: GitBranch, label: "Flows", bgColor: "bg-purple-400" },
+    { to: "/transcripts", icon: FileText, label: "Transcripts", bgColor: "bg-purple-300" },
     { to: "/settings", icon: Settings, label: "Settings" },
   ];
 
