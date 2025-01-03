@@ -9,54 +9,62 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { Flow } from "@/utils/storage";
+import { cn } from "@/lib/utils";
 
 interface FlowCardProps {
   flow: Flow;
   onEdit: (flow: Flow) => void;
   onDelete: (id: string) => void;
+  detailed?: boolean;
 }
 
-export function FlowCard({ flow, onEdit, onDelete }: FlowCardProps) {
+export function FlowCard({ flow, onEdit, onDelete, detailed = false }: FlowCardProps) {
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={cn("h-full flex flex-col", detailed ? "shadow-none border-0" : "")}>
       <CardHeader className="flex-none">
-        <CardTitle className="text-lg break-words">{flow.name}</CardTitle>
-        <CardDescription className="break-all">
-          Endpoint: {flow.endpoint}
-        </CardDescription>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-xl break-words">{flow.name}</CardTitle>
+            <CardDescription className="break-all mt-1">
+              Endpoint: {flow.endpoint}
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onEdit(flow)}
+              className="h-9 w-9 sm:h-8 sm:w-8"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onDelete(flow.id)}
+              className="h-9 w-9 sm:h-8 sm:w-8"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div>
-            <span className="font-medium">Format:</span>
-            <pre className="mt-1 text-sm bg-muted p-2 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
+            <h3 className="font-medium mb-2">Format Template</h3>
+            <pre className="text-sm bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
               {flow.format}
             </pre>
           </div>
           <div>
-            <span className="font-medium">Prompt:</span>
-            <p className="mt-1 text-sm text-muted-foreground break-words">{flow.prompt}</p>
+            <h3 className="font-medium mb-2">Prompt Template</h3>
+            <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md break-words">
+              {flow.prompt}
+            </div>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex-none flex justify-end space-x-2">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={() => onEdit(flow)}
-          className="h-9 w-9 sm:h-8 sm:w-8"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={() => onDelete(flow.id)}
-          className="h-9 w-9 sm:h-8 sm:w-8"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

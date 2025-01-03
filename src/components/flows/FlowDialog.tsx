@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { Flow } from "@/utils/storage";
+import { useEffect } from "react";
 
 interface FlowDialogProps {
   open: boolean;
@@ -28,6 +29,13 @@ interface FlowDialogProps {
   editingFlow?: Flow;
 }
 
+const defaultValues = {
+  name: "",
+  endpoint: "",
+  format: '{ "details": { "title": "", "summary": "", "valid_points": [] } }',
+  prompt: "Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.",
+};
+
 export function FlowDialog({
   open,
   onOpenChange,
@@ -35,13 +43,16 @@ export function FlowDialog({
   editingFlow,
 }: FlowDialogProps) {
   const form = useForm<Omit<Flow, "id">>({
-    defaultValues: editingFlow || {
-      name: "",
-      endpoint: "",
-      format: '{ "details": { "title": "", "summary": "", "valid_points": [] } }',
-      prompt: "Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.",
-    },
+    defaultValues: editingFlow || defaultValues,
   });
+
+  useEffect(() => {
+    if (editingFlow) {
+      form.reset(editingFlow);
+    } else {
+      form.reset(defaultValues);
+    }
+  }, [editingFlow, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,24 +119,22 @@ export function FlowDialog({
               name="prompt"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Prompt</FormLabel>
+                  <FormLabel>Prompt Template</FormLabel>
                   <FormControl>
                     <Textarea 
-                      {...field} 
+                      {...field}
                       className="resize-y min-h-[100px]"
-                      placeholder="Prompt template for OpenAI (use {transcript} for the transcribed text)"
                     />
                   </FormControl>
-                  <FormDescription>
-                    Prompt template for the AI (use {"{transcript}"} to refer to the
-                    transcribed text)
-                  </FormDescription>
+                  <FormDescription>Use {"{transcript}"} as placeholder for the transcript text</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save Flow</Button>
+              <Button type="submit">
+                {editingFlow ? "Save Changes" : "Create Flow"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

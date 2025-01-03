@@ -1,23 +1,26 @@
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Flow } from "@/utils/storage";
 import { getFlows, saveFlow, deleteFlow } from "@/utils/flowManager";
-import { FlowCard } from "@/components/flows/FlowCard";
 import { FlowDialog } from "@/components/flows/FlowDialog";
+import { FlowBoard } from "@/components/flows/FlowBoard";
 
 const Flows = () => {
   const [flows, setFlows] = useState<Flow[]>(getFlows());
   const [editingFlow, setEditingFlow] = useState<string | undefined>();
+  const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const onSubmit = (data: Omit<Flow, "id">) => {
     try {
@@ -47,6 +50,7 @@ const Flows = () => {
     try {
       deleteFlow(id);
       setFlows(getFlows());
+      setSelectedFlow(null);
       toast({
         title: "Success",
         description: "Flow deleted successfully",
@@ -68,40 +72,22 @@ const Flows = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div>
-            <CardTitle>Automation Flows</CardTitle>
-            <CardDescription>
-              Create and manage your automation flows here
-            </CardDescription>
-          </div>
-          <Button onClick={() => setIsOpen(true)}>Add Flow</Button>
-        </CardHeader>
-        <CardContent className="space-y-4 md:space-y-4 sm:grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:gap-4 md:gap-6">
-          {flows.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8 col-span-full">
-              No flows available. Click "Add Flow" to create one.
-            </p>
-          ) : (
-            flows.map((flow) => (
-              <FlowCard
-                key={flow.id}
-                flow={flow}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            ))
-          )}
-        </CardContent>
-      </Card>
-
+    <div className="h-full flex flex-col bg-gray-50/40 dark:bg-gray-800/40">
+      <FlowBoard
+        flows={flows}
+        onFlowSelect={setSelectedFlow}
+        onNewFlow={() => setIsOpen(true)}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        selectedFlow={selectedFlow}
+        isMobileView={isMobileView}
+      />
+      
       <FlowDialog
         open={isOpen}
         onOpenChange={handleDialogOpenChange}
         onSubmit={onSubmit}
-        editingFlow={flows.find((f) => f.id === editingFlow)}
+        editingFlow={editingFlow ? flows.find(f => f.id === editingFlow) : undefined}
       />
     </div>
   );
