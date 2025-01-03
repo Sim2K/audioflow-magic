@@ -68,6 +68,10 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 262.1 83.3% 57.8%;
   }
+ 
+  .bg-sidebar {
+    background-color: white; /* Solid white background */
+  }
 }
  
 @layer base {
