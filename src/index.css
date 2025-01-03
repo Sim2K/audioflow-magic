@@ -4,6 +4,8 @@
  
 @layer base {
   :root {
+    --sidebar: 217.2 32.6% 17.5%; /* Example: dark gray for sidebar */
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -36,6 +38,8 @@
   }
  
   .dark {
+    --sidebar: 222.2 84% 4.9%; /* Example: dark mode sidebar */
+
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
  

@@ -1,272 +1,252 @@
 # AIAudioFlow Application Reference Guide
 
-This document serves as a comprehensive reference for the AIAudioFlow application architecture, components, and implementation details. It is maintained to provide quick access to important information about the application's structure and functionality.
+This document serves as a comprehensive reference for the AIAudioFlow application architecture, components, and implementation details.
 
 ## Version Control
-- **Last Updated**: 2025-01-02
+- **Last Updated**: 2025-01-03
 - **Version**: 1.0.0
-- **Maintainer**: Cascade AI
+- **Environment**: Vite + React + TypeScript
+- **UI Framework**: Tailwind CSS + shadcn/ui
 
-## Purpose
-- Quick reference for application architecture and implementation details
-- Centralized documentation for component configurations
-- Easy lookup for file locations and component relationships
-- Track important implementation decisions and configurations
+## Core Architecture
 
-## Table of Contents
-1. [Audio Recording](#audio-recording)
-2. [Components](#components)
-3. [State Management](#state-management)
-4. [Utils](#utils)
-5. [Future Integration Templates](#future-integration-templates)
-
----
-
-## Audio Recording
-
-### Configuration
-1. Audio Settings:
-   - Format: WebM container with Opus codec
-   - Channels: Mono (channelCount: 1)
-   - Sample Rate: 22,050 Hz
-   - Bitrate: 56 kbps
-   - Features: Echo cancellation, noise suppression
-
-2. Performance Metrics:
-   - Target File Size: < 25MB per hour
-   - Quality: Optimized for voice recording
-   - Data Collection Interval: 1000ms chunks
-
-3. Implementation Location:
-   - Primary: `/src/utils/audioRecorder.ts`
-   - Interface: `AudioRecorder` class
-
-### Recording Process Flow
-1. Initialization:
-   - Stream acquisition with optimized constraints
-   - MediaRecorder setup with codec and bitrate settings
-   - Chunk collection array initialization
-
-2. Recording Lifecycle:
-   - Start: Configure and initialize recording
-   - During: Collect data in 1-second chunks
-   - Stop: Combine chunks and cleanup resources
-
-3. Error Handling:
-   - Microphone access failures
-   - Recording state conflicts
-   - Data collection issues
-
----
-
-## Components
-
-### Component Architecture
-1. **Core Components**
-   - Location: `/src/components`
-   - Naming Convention: PascalCase
-   - Style Integration: Tailwind CSS
-
-2. **UI Components**
-   - Base Components: `/components/ui`
-   - Custom Components: `/components/custom`
-   - Shared Components: `/components/shared`
-
-3. **Component Templates**
-```typescript
-// Template for functional components
-import { FC } from 'react';
-
-interface ComponentProps {
-  // Props definition
-}
-
-export const Component: FC<ComponentProps> = ({ ...props }) => {
-  return (
-    // JSX
-  );
-};
+### Application Structure
+```
+src/
+├── components/
+│   ├── ui/          # Base UI components
+│   ├── layout/      # Layout components
+│   └── flows/       # Flow-specific components
+├── hooks/           # Custom React hooks
+├── lib/            # Utility libraries
+├── pages/          # Route pages
+└── utils/          # Utility functions
 ```
 
----
+### Key Features
 
-## State Management
+1. **Audio Recording**
+   - WebM format with Opus codec
+   - Real-time audio visualization
+   - Download capability in MP3 format
+   - Configurable recording settings
 
-### Local State Patterns
-1. **React Hooks**
-   - useState for component-level state
-   - useEffect for side effects
-   - Custom hooks for reusable logic
+2. **Flow Management**
+   - Custom flow creation and editing
+   - JSON response format configuration
+   - Dynamic prompt templates
+   - API endpoint configuration
 
-2. **State Organization**
+3. **Transcript Management**
+   - Local storage of transcripts
+   - Detailed view with tabs
+   - JSON response visualization
+   - Transcript deletion capability
+
+4. **Mobile Responsiveness**
+   - Adaptive sidebar navigation
+   - Touch-friendly interface
+   - Responsive layout adjustments
+   - Mobile-optimized controls
+
+### Component Details
+
+1. **Layout Components**
+   - **MainLayout** (`/components/layout/MainLayout.tsx`)
+     - Root layout wrapper
+     - Manages sidebar state
+     - Handles responsive behavior
+
+   - **AppSidebar** (`/components/layout/AppSidebar.tsx`)
+     ```typescript
+     Features:
+     - Gradient title header
+     - Mobile-friendly navigation
+     - Auto-closing mobile menu
+     - White background for readability
+     ```
+
+2. **Flow Components**
+   - **FlowDialog** (`/components/flows/FlowDialog.tsx`)
+     ```typescript
+     Interface:
+     {
+       name: string;
+       endpoint: string;
+       format: string;  // JSON template
+       prompt: string;  // AI prompt template
+     }
+     ```
+
+3. **UI Components**
+   - Buttons, Inputs, Dialogs from shadcn/ui
+   - Custom styled components with Tailwind
+   - Responsive design patterns
+
+### State Management
+
+1. **Local Storage**
    ```typescript
-   // Template for organizing related state
-   const [isProcessing, setIsProcessing] = useState(false);
-   const [hasError, setHasError] = useState(false);
-   const [data, setData] = useState<DataType | null>(null);
-   ```
-
-### Global State Patterns
-1. **Context Usage**
-   - Create contexts for shared state
-   - Provide at appropriate level
-   - Consumer component patterns
-
----
-
-## Utils
-
-### Utility Functions
-1. **Audio Processing**
-   - Location: `/src/utils/audioRecorder.ts`
-   - Purpose: Audio recording and processing
-   - Interface: Class-based implementation
-
-2. **Type Definitions**
-   - Location: `/src/types`
-   - Pattern: Interface-first design
-   - Export conventions
-
-3. **Helper Functions**
-   - Location: `/src/utils/helpers`
-   - Pure functions
-   - Error handling patterns
-
----
-
-## Future Integration Templates
-
-### Authentication Template
-```typescript
-// Template for auth configuration
-interface AuthConfig {
-  providers: string[];
-  callbacks: {
-    signIn: (user: User) => Promise<boolean>;
-    redirect: (url: string, baseUrl: string) => Promise<string>;
-  };
-  pages: {
-    signIn: string;
-    error: string;
-  };
-}
-```
-
-### Payment Integration Template
-1. **Provider Setup**
-   - Configuration pattern
-   - Environment variables
-   - API route structure
-
-2. **Payment Flow Template**
-   ```typescript
-   interface PaymentConfig {
-     currency: string;
-     amount: number;
-     metadata: Record<string, unknown>;
+   interface StorageStructure {
+     transcripts: {
+       id: string;
+       text: string;
+       timestamp: number;
+       audioUrl?: string;
+       response: {
+         details: {
+           title: string;
+           summary: string;
+           valid_points: string[];
+         }
+       }
+     }[];
+     flows: {
+       id: string;
+       name: string;
+       endpoint: string;
+       format: string;
+       prompt: string;
+     }[];
    }
    ```
 
-3. **Webhook Handler Template**
-   - Verification pattern
-   - Event processing
-   - Error handling
+2. **React Context**
+   - SidebarContext for navigation state
+   - AudioContext for recording state
+   - FlowContext for flow management
 
-### Database Schema Templates
-```sql
--- Template for core tables
-CREATE TABLE users (
-  id VARCHAR PRIMARY KEY,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-);
+### API Integration
 
-CREATE TABLE recordings (
-  id VARCHAR PRIMARY KEY,
-  user_id VARCHAR REFERENCES users(id),
-  file_path VARCHAR,
-  duration INTEGER,
-  created_at TIMESTAMP
-);
-```
+1. **OpenAI Integration**
+   ```typescript
+   interface AIResponse {
+     details: {
+       title: string;
+       summary: string;
+       valid_points: string[];
+     }
+   }
+   ```
 
----
+2. **Audio Processing**
+   - WebM recording
+   - MP3 conversion
+   - Blob URL generation
 
-## Routing Structure
+### Mobile Optimization
 
-### Page Routes
-- `/`: Main recording interface
-- `/transcripts`: Transcript history
-- `/settings`: Application settings
-- `/flows`: Flow management
+1. **Responsive Design**
+   ```css
+   /* Breakpoint Strategy */
+   sm: 640px   // Mobile landscape
+   md: 768px   // Tablets
+   lg: 1024px  // Desktop
+   xl: 1280px  // Large screens
+   ```
 
-### API Routes Template
-```typescript
-// Template for API route handler
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  try {
-    // Implementation
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-}
-```
+2. **Mobile Features**
+   - Hamburger menu navigation
+   - Touch-friendly controls
+   - Adaptive layouts
+   - Performance optimizations
 
----
+### Navigation Structure
 
-## Error Handling Patterns
+1. **Routes**
+   ```typescript
+   routes: [
+     { path: "/", component: Index },        // Recording
+     { path: "/flows", component: Flows },   // Flow management
+     { path: "/transcripts", component: Transcripts },
+     { path: "/settings", component: Settings }
+   ]
+   ```
 
-### Frontend Error Template
-```typescript
-interface ErrorState {
-  hasError: boolean;
-  message: string;
-  code?: string;
-}
+2. **Navigation Features**
+   - Client-side routing
+   - Route protection
+   - Navigation state management
 
-const handleError = (error: unknown) => {
-  // Error handling implementation
-};
-```
+### Styling Architecture
 
-### API Error Template
-```typescript
-interface APIError {
-  status: number;
-  code: string;
-  message: string;
-  details?: unknown;
-}
-```
+1. **Tailwind Configuration**
+   ```javascript
+   theme: {
+     extend: {
+       colors: {
+         accent: {...},
+         foreground: {...}
+       }
+     }
+   }
+   ```
 
----
+2. **Component Styling**
+   - Utility-first approach
+   - Consistent spacing system
+   - Responsive classes
+   - Dark mode support
 
-## Testing Patterns
+### Error Handling
 
-### Unit Test Template
-```typescript
-describe('Component/Function Name', () => {
-  beforeEach(() => {
-    // Setup
-  });
+1. **Error Boundaries**
+   - Component-level error catching
+   - Fallback UI components
+   - Error reporting
 
-  it('should behave as expected', () => {
-    // Test implementation
-  });
-});
-```
+2. **Form Validation**
+   - Input validation
+   - Error messages
+   - User feedback
 
-### Integration Test Template
-```typescript
-describe('Feature Integration', () => {
-  beforeAll(() => {
-    // Global setup
-  });
+### Performance Optimization
 
-  afterAll(() => {
-    // Cleanup
-  });
-});
+1. **Code Splitting**
+   - Route-based splitting
+   - Component lazy loading
+   - Dynamic imports
+
+2. **Resource Management**
+   - Audio buffer cleanup
+   - Memory leak prevention
+   - Event listener cleanup
+
+### Security Considerations
+
+1. **Data Storage**
+   - Local storage encryption
+   - Sensitive data handling
+   - XSS prevention
+
+2. **API Security**
+   - Request validation
+   - CORS configuration
+   - Rate limiting
+
+### Future Enhancements
+
+1. **Planned Features**
+   - Cloud storage integration
+   - User authentication
+   - Advanced audio processing
+   - Real-time collaboration
+
+2. **Technical Debt**
+   - Component optimization
+   - Test coverage
+   - Documentation updates
+
+## Development Guidelines
+
+1. **Code Style**
+   - Functional components
+   - TypeScript strict mode
+   - ESLint configuration
+   - Prettier formatting
+
+2. **Best Practices**
+   - Component composition
+   - Hook patterns
+   - Performance considerations
+   - Accessibility standards
