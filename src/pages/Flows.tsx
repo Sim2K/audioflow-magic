@@ -79,9 +79,9 @@ const Flows = () => {
           </div>
           <Button onClick={() => setIsOpen(true)}>Add Flow</Button>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 md:space-y-4 sm:grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:gap-4 md:gap-6">
           {flows.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-center text-muted-foreground py-8 col-span-full">
               No flows available. Click "Add Flow" to create one.
             </p>
           ) : (

@@ -19,29 +19,77 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     const audioContext = new AudioContext();
     const audioBuffer = await audioContext.decodeAudioData(audioData);
     
-    // Create MP3 blob
+    // Create MP3 blob with optimized settings
     const mp3Blob = await convertToMp3(audioBuffer);
     
-    // First step: Transcribe audio using Whisper
-    const formData = new FormData();
-    formData.append('file', mp3Blob, 'audio.mp3');
-    formData.append('model', 'whisper-1');
-
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to transcribe audio');
+    // Check file size
+    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+    if (mp3Blob.size > MAX_FILE_SIZE) {
+      throw new Error(`Audio file size (${(mp3Blob.size / 1024 / 1024).toFixed(2)}MB) exceeds the maximum limit of 25MB. Please record a shorter message or check audio settings.`);
     }
 
-    const data: WhisperResponse = await response.json();
-    const transcript = data.text;
+    // Warn if file size is approaching limit
+    if (mp3Blob.size > MAX_FILE_SIZE * 0.8) {
+      console.warn(`Audio file size (${(mp3Blob.size / 1024 / 1024).toFixed(2)}MB) is approaching the 25MB limit.`);
+    }
+
+    // Calculate chunks if file is large (over 24MB)
+    const MAX_CHUNK_SIZE = 24 * 1024 * 1024; // 24MB
+    let transcriptParts: string[] = [];
+    
+    if (mp3Blob.size > MAX_CHUNK_SIZE) {
+      // Split into chunks
+      const chunks = Math.ceil(mp3Blob.size / MAX_CHUNK_SIZE);
+      for (let i = 0; i < chunks; i++) {
+        const start = i * MAX_CHUNK_SIZE;
+        const end = Math.min((i + 1) * MAX_CHUNK_SIZE, mp3Blob.size);
+        const chunk = mp3Blob.slice(start, end, 'audio/mp3');
+        
+        // Transcribe chunk
+        const formData = new FormData();
+        formData.append('file', chunk, 'chunk.mp3');
+        formData.append('model', 'whisper-1');
+        
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error?.message || 'Failed to transcribe audio chunk');
+        }
+
+        const data: WhisperResponse = await response.json();
+        transcriptParts.push(data.text);
+      }
+    } else {
+      // Process as single file
+      const formData = new FormData();
+      formData.append('file', mp3Blob, 'audio.mp3');
+      formData.append('model', 'whisper-1');
+
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to transcribe audio');
+      }
+
+      const data: WhisperResponse = await response.json();
+      transcriptParts = [data.text];
+    }
+
+    const transcript = transcriptParts.join(' ');
 
     // Second step: Process transcript with GPT-4
     // Use flow.endpoint if provided, otherwise use default

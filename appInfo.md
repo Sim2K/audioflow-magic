@@ -4,7 +4,7 @@ This document serves as a comprehensive reference for the AIAudioFlow applicatio
 
 ## Version Control
 - **Last Updated**: 2025-01-03
-- **Version**: 1.0.0
+- **Version**: 1.0.1
 - **Environment**: Vite + React + TypeScript
 - **UI Framework**: Tailwind CSS + shadcn/ui
 
@@ -27,15 +27,29 @@ src/
 
 1. **Audio Recording**
    - WebM format with Opus codec
-   - Real-time audio visualization
-   - Download capability in MP3 format
-   - Configurable recording settings
+   - Optimized for long recordings (up to 60 minutes)
+   - Audio Settings:
+     - Mono channel (channelCount: 1)
+     - 8000Hz sample rate (optimized for voice)
+     - 12kbps bitrate
+     - Enhanced compression for long recordings
+     - Auto gain control enabled
+     - Echo cancellation and noise suppression
+   - File size management:
+     - Target size: < 25MB for 60-minute recordings
+     - Size warning at 80% of limit
+     - Automatic file size validation
 
 2. **Flow Management**
    - Custom flow creation and editing
    - JSON response format configuration
    - Dynamic prompt templates
    - API endpoint configuration
+   - Responsive UI:
+     - Mobile-optimized grid layout
+     - Adaptive card sizing
+     - Touch-friendly controls
+     - Text wrapping for long content
 
 3. **Transcript Management**
    - Local storage of transcripts
@@ -44,47 +58,53 @@ src/
    - Transcript deletion capability
 
 4. **Mobile Responsiveness**
-   - Adaptive sidebar navigation
-   - Touch-friendly interface
-   - Responsive layout adjustments
-   - Mobile-optimized controls
+   - Adaptive grid layout:
+     - Single column on small screens
+     - Two columns on medium screens
+     - Three columns on large screens
+   - Responsive card design:
+     - Full-height flex layout
+     - Proper text wrapping
+     - Optimized button sizes
+     - Overflow handling
+   - Touch-optimized interface
 
 ### Component Details
 
-1. **Layout Components**
-   - **MainLayout** (`/components/layout/MainLayout.tsx`)
-     - Root layout wrapper
-     - Manages sidebar state
-     - Handles responsive behavior
-
-   - **AppSidebar** (`/components/layout/AppSidebar.tsx`)
+1. **Flow Components**
+   - **FlowCard** (`/components/flows/FlowCard.tsx`)
      ```typescript
      Features:
-     - Gradient title header
-     - Mobile-friendly navigation
-     - Auto-closing mobile menu
-     - White background for readability
+     - Flex column layout
+     - Dynamic height adjustment
+     - Content overflow handling
+     - Mobile-optimized buttons
+     - Text wrapping for all content types
      ```
 
-2. **Flow Components**
-   - **FlowDialog** (`/components/flows/FlowDialog.tsx`)
-     ```typescript
-     Interface:
-     {
-       name: string;
-       endpoint: string;
-       format: string;  // JSON template
-       prompt: string;  // AI prompt template
-     }
-     ```
+2. **Audio Processing** (`/utils/audioRecorder.ts`)
+   ```typescript
+   Settings:
+   - Sample Rate: 8000Hz
+   - Bitrate: 12kbps
+   - Format: audio/webm;codecs=opus
+   - Chunk Interval: 250ms
+   Features:
+   - Optimized for voice clarity
+   - Minimal file size
+   - Automatic cleanup
+   ```
 
-3. **UI Components**
-   - Buttons, Inputs, Dialogs from shadcn/ui
-   - Custom styled components with Tailwind
-   - Responsive design patterns
+3. **OpenAI Integration** (`/utils/openai.ts`)
+   ```typescript
+   Features:
+   - File size validation
+   - Size limit warnings
+   - Error handling with size information
+   - MP3 conversion optimization
+   ```
 
 ### State Management
-
 1. **Local Storage**
    ```typescript
    interface StorageStructure {
@@ -100,18 +120,61 @@ src/
            valid_points: string[];
          }
        }
-     }[];
-     flows: {
-       id: string;
-       name: string;
-       endpoint: string;
-       format: string;
-       prompt: string;
-     }[];
+     }[]
    }
    ```
 
-2. **React Context**
+### Performance Optimizations
+1. **Audio Processing**
+   - Optimized compression for long recordings
+   - Voice-focused audio settings
+   - Efficient memory usage
+   - Automatic resource cleanup
+
+2. **UI Responsiveness**
+   - Lazy loading of components
+   - Efficient grid layouts
+   - Optimized touch targets
+   - Adaptive content display
+
+### Security Considerations
+1. **API Security**
+   - Request validation
+   - CORS configuration
+   - Rate limiting
+   - API key management in .env
+
+### Known Limitations
+1. **Audio Recording**
+   - Maximum file size: 25MB
+   - Optimized for voice (not music)
+   - Single channel audio only
+
+### Layout Components
+
+1. **MainLayout** (`/components/layout/MainLayout.tsx`)
+   - Root layout wrapper
+   - Manages sidebar state
+   - Handles responsive behavior
+
+2. **AppSidebar** (`/components/layout/AppSidebar.tsx`)
+   ```typescript
+   Features:
+   - Gradient title header
+   - Mobile-friendly navigation
+   - Auto-closing mobile menu
+   - White background for readability
+   ```
+
+### UI Components
+
+1. **Buttons, Inputs, Dialogs** from shadcn/ui
+2. **Custom styled components** with Tailwind
+3. **Responsive design patterns**
+
+### State Management
+
+1. **React Context**
    - SidebarContext for navigation state
    - AudioContext for recording state
    - FlowContext for flow management

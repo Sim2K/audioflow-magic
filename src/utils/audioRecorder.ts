@@ -14,15 +14,16 @@ export class AudioRecorder {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1, // Mono audio
-          sampleRate: 22050, // Lower sample rate, good for voice
+          sampleRate: 8000, // Minimum sample rate good enough for voice
           echoCancellation: true,
           noiseSuppression: true,
+          autoGainControl: true,
         } 
       });
 
       this.mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 56000 // ~56 kbps for optimal size/quality balance
+        audioBitsPerSecond: 12000 // 12 kbps - optimized for voice at minimum size
       });
 
       this.audioChunks = [];
