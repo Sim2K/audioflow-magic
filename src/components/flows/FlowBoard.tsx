@@ -101,16 +101,22 @@ export function FlowBoard({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Format Template</label>
-                    <pre className="text-sm bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap">
-                      {selectedFlow.format}
-                    </pre>
+                    <label className="block text-sm font-medium mb-2">Instructions</label>
+                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md whitespace-pre-wrap">
+                      {selectedFlow.instructions || "No instructions provided"}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Prompt Template</label>
                     <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
                       {selectedFlow.prompt}
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Format Template</label>
+                    <pre className="text-sm bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap">
+                      {selectedFlow.format}
+                    </pre>
                   </div>
                 </div>
               </div>

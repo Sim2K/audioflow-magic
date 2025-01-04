@@ -34,6 +34,7 @@ const defaultValues = {
   endpoint: "",
   format: '{ "details": { "title": "", "summary": "", "valid_points": [] } }',
   prompt: "Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.",
+  instructions: "",
 };
 
 export function FlowDialog({
@@ -56,7 +57,7 @@ export function FlowDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6 w-[95%] sm:w-auto">
         <DialogHeader>
           <DialogTitle>{editingFlow ? "Edit Flow" : "Create Flow"}</DialogTitle>
           <DialogDescription>
@@ -64,75 +65,100 @@ export function FlowDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="My Flow" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="endpoint"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>API Endpoint</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="https://api.example.com/endpoint"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Where to send the processed data - Future functionality - Placeholder
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="format"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Response Format</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      {...field} 
-                      className="font-mono resize-y min-h-[50px]"
-                    />
-                  </FormControl>
-                  <FormDescription>JSON format for the response - Leave as is if you don't know what you're doing</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="prompt"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prompt Template</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      {...field}
-                      className="resize-y min-h-[100px]"
-                    />
-                  </FormControl>
-                  <FormDescription>Use {"{transcript}"} as placeholder for the transcript text</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="My Flow" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="instructions"
+                render={({ field }) => (
+                  <FormItem className="md:row-span-2">
+                    <FormLabel>Instructions</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter instructions for using this flow..."
+                        className="min-h-[100px] h-full resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Instructions for users on how to use this flow when recording
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="prompt"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2 mt-14">
+                    <FormLabel>Prompt Template</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        className="min-h-[100px] resize-none"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Use {"{transcript}"} as placeholder for the transcript text
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="format"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Format Template</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Format template"
+                        className="font-mono min-h-[100px] resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endpoint"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>API Endpoint</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Coming soon..."
+                        disabled
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      API endpoint functionality coming soon
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <DialogFooter>
-              <Button type="submit">
+              <Button type="submit" className="w-full sm:w-auto">
                 {editingFlow ? "Save Changes" : "Create Flow"}
               </Button>
             </DialogFooter>

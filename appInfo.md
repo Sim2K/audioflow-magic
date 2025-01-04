@@ -45,11 +45,24 @@ src/
    - JSON response format configuration
    - Dynamic prompt templates
    - API endpoint configuration
+   - Instructions field for user guidance
    - Responsive UI:
      - Mobile-optimized grid layout
      - Adaptive card sizing
      - Touch-friendly controls
      - Text wrapping for long content
+
+3. **Flow Record Structure**
+   ```typescript
+   interface Flow {
+     id: string;           // Unique identifier
+     name: string;         // Flow name
+     endpoint: string;     // API endpoint
+     format: string;       // JSON response format
+     prompt: string;       // GPT prompt template
+     instructions: string; // User instructions for recording
+   }
+   ```
 
 3. **Transcript Management**
    - Local storage of transcripts
@@ -71,7 +84,33 @@ src/
 
 ### Component Details
 
-1. **Flow Components**
+1. **Flow Dialog** (`/components/flows/FlowDialog.tsx`)
+   ```typescript
+   Features:
+   - Responsive form layout:
+     - Mobile: Single column, 95% screen width with padding
+     - Desktop: Two columns, 800px max width
+   - Field order:
+     1. Name (desktop: left column)
+     2. Instructions (desktop: right column, spans 2 rows)
+     3. Prompt Template (full width)
+     4. Format Template (full width)
+     5. API Endpoint (full width, disabled)
+   - Improved spacing:
+     - 1.5rem (24px) gap between form fields
+     - Consistent padding and margins
+     - Better description text placement
+   - Fixed height textareas:
+     - min-height: 100px
+     - resize disabled for consistent layout
+   - Mobile optimizations:
+     - Vertical scrolling for overflow
+     - Full-width submit button
+     - Proper edge spacing
+     - Improved form field spacing
+   ```
+
+2. **Flow Components**
    - **FlowCard** (`/components/flows/FlowCard.tsx`)
      ```typescript
      Features:
@@ -82,7 +121,7 @@ src/
      - Text wrapping for all content types
      ```
 
-2. **Audio Processing** (`/utils/audioRecorder.ts`)
+3. **Audio Processing** (`/utils/audioRecorder.ts`)
    ```typescript
    Settings:
    - Sample Rate: 8000Hz
@@ -95,7 +134,7 @@ src/
    - Automatic cleanup
    ```
 
-3. **OpenAI Integration** (`/utils/openai.ts`)
+4. **OpenAI Integration** (`/utils/openai.ts`)
    ```typescript
    Features:
    - File size validation

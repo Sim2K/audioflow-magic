@@ -9,6 +9,7 @@ export interface Flow {
   endpoint: string;
   format: string;
   prompt: string;
+  instructions: string;
 }
 
 export const storage = {

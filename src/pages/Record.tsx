@@ -138,74 +138,83 @@ const Index = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>AI Audio Flow 1.0</CardTitle>
+          <CardTitle>Record Audio</CardTitle>
+          <CardDescription>
+            Select a flow and record your audio for processing
+          </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-4">
-          <Select
-            value={selectedFlow?.id}
-            onValueChange={(value) => {
-              const flow = flows.find((f) => f.id === value);
-              setSelectedFlow(flow || null);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a flow" />
-            </SelectTrigger>
-            <SelectContent>
-              {flows.length === 0 ? (
-                <SelectItem value="none" disabled>
-                  No flows available. Please create one first.
-                </SelectItem>
-              ) : (
-                flows.map((flow) => (
+        <CardContent className="space-y-4">
+          <div className="flex flex-col space-y-4">
+            <Select
+              value={selectedFlow?.id || ""}
+              onValueChange={(value) =>
+                setSelectedFlow(flows.find((f) => f.id === value) || null)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a flow" />
+              </SelectTrigger>
+              <SelectContent>
+                {flows.map((flow) => (
                   <SelectItem key={flow.id} value={flow.id}>
                     {flow.name}
                   </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <div className="relative">
-            <Button
-              size="lg"
-              className={`rounded-full p-8 cursor-pointer transition-all duration-200 active:scale-95 ${
-                isRecording
-                  ? "bg-red-500 hover:bg-red-600 hover:shadow-lg"
-                  : "bg-purple-500 hover:bg-purple-600 hover:shadow-lg"
-              }`}
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={!selectedFlow}
-            >
-              {isRecording ? (
-                <Square className="h-6 w-6" />
-              ) : (
-                <Mic className="h-6 w-6" />
-              )}
-            </Button>
-            {isRecording && (
-              <div className="absolute inset-0 rounded-full animate-pulse-ring border-2 border-red-500 pointer-events-none" />
+            {selectedFlow?.instructions && (
+              <Card className="bg-muted">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium">Instructions</CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {selectedFlow.instructions}
+                </CardContent>
+              </Card>
             )}
+
+            <div className="flex justify-center gap-4">
+              <Button
+                size="lg"
+                className={`rounded-full p-8 cursor-pointer transition-all duration-200 active:scale-95 ${
+                  isRecording
+                    ? "bg-red-500 hover:bg-red-600 hover:shadow-lg"
+                    : "bg-purple-500 hover:bg-purple-600 hover:shadow-lg"
+                }`}
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={!selectedFlow}
+              >
+                {isRecording ? (
+                  <Square className="h-6 w-6" />
+                ) : (
+                  <Mic className="h-6 w-6" />
+                )}
+              </Button>
+              {isRecording && (
+                <div className="absolute inset-0 rounded-full animate-pulse-ring border-2 border-red-500 pointer-events-none" />
+              )}
+            </div>
+            {audioUrl && (
+              <a
+                href={audioUrl}
+                download="recording.mp3"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary hover:text-primary/80"
+              >
+                Download Recording
+              </a>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {!selectedFlow
+                ? "Select a flow to start recording"
+                : isRecording
+                ? "Recording in progress..."
+                : "Click to start recording"}
+            </p>
           </div>
-          {audioUrl && (
-            <a
-              href={audioUrl}
-              download="recording.mp3"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary hover:text-primary/80"
-            >
-              Download Recording
-            </a>
-          )}
-          <p className="text-sm text-muted-foreground">
-            {!selectedFlow
-              ? "Select a flow to start recording"
-              : isRecording
-              ? "Recording in progress..."
-              : "Click to start recording"}
-          </p>
         </CardContent>
       </Card>
 
