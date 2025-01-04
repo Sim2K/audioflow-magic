@@ -215,101 +215,12 @@ src/
    - Performance optimizations
 
 ### Navigation Structure
+- Home (`/`) - Main dashboard
+- Features (`/features`) - Feature overview
+- Record (`/record`) - Audio recording interface
+- Flows (`/flows`) - Flow management
+- Transcripts (`/transcripts`) - Transcript management
+- Flow Help (`https://gpts4u.com/aiaudioflows`) - External help documentation
+- Settings (`/settings`) - Application settings
 
-1. **Routes**
-   ```typescript
-   routes: [
-     { path: "/", component: Index },        // Recording
-     { path: "/flows", component: Flows },   // Flow management
-     { path: "/transcripts", component: Transcripts },
-     { path: "/settings", component: Settings }
-   ]
-   ```
-
-2. **Navigation Features**
-   - Client-side routing
-   - Route protection
-   - Navigation state management
-
-### Styling Architecture
-
-1. **Tailwind Configuration**
-   ```javascript
-   theme: {
-     extend: {
-       colors: {
-         accent: {...},
-         foreground: {...}
-       }
-     }
-   }
-   ```
-
-2. **Component Styling**
-   - Utility-first approach
-   - Consistent spacing system
-   - Responsive classes
-   - Dark mode support
-
-### Error Handling
-
-1. **Error Boundaries**
-   - Component-level error catching
-   - Fallback UI components
-   - Error reporting
-
-2. **Form Validation**
-   - Input validation
-   - Error messages
-   - User feedback
-
-### Performance Optimization
-
-1. **Code Splitting**
-   - Route-based splitting
-   - Component lazy loading
-   - Dynamic imports
-
-2. **Resource Management**
-   - Audio buffer cleanup
-   - Memory leak prevention
-   - Event listener cleanup
-
-### Security Considerations
-
-1. **Data Storage**
-   - Local storage encryption
-   - Sensitive data handling
-   - XSS prevention
-
-2. **API Security**
-   - Request validation
-   - CORS configuration
-   - Rate limiting
-
-### Future Enhancements
-
-1. **Planned Features**
-   - Cloud storage integration
-   - User authentication
-   - Advanced audio processing
-   - Real-time collaboration
-
-2. **Technical Debt**
-   - Component optimization
-   - Test coverage
-   - Documentation updates
-
-## Development Guidelines
-
-1. **Code Style**
-   - Functional components
-   - TypeScript strict mode
-   - ESLint configuration
-   - Prettier formatting
-
-2. **Best Practices**
-   - Component composition
-   - Hook patterns
-   - Performance considerations
-   - Accessibility standards
+### UI Components{{ ... }}

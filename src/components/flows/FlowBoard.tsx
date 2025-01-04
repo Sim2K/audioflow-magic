@@ -1,6 +1,6 @@
 import { Flow } from "@/utils/storage";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, Pencil } from "lucide-react";
+import { Plus, ChevronLeft, Pencil, Sparkles } from "lucide-react";
 import { FlowList } from "./FlowList";
 import { cn } from "@/lib/utils";
 
@@ -30,10 +30,18 @@ export function FlowBoard({
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-semibold">Flows</h1>
         </div>
-        <Button onClick={onNewFlow} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add new flow
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <a href="https://gpts4u.com/aiaudioflows" target="_blank" rel="noopener noreferrer">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Flow Help
+            </a>
+          </Button>
+          <Button onClick={onNewFlow} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add new flow
+          </Button>
+        </div>
       </div>
 
       {/* Board Content */}

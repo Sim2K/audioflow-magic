@@ -104,7 +104,38 @@ export function AppSidebar() {
           </nav>
         </div>
 
-        <div className="mt-auto p-4 border-t">
+        <div className="mt-auto p-4 border-t space-y-4">
+          <a 
+            href="https://gpts4u.com/aiaudioflows" 
+            target="_blank" 
+            className="block"
+            onClick={handleNavClick}
+          >
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full h-12 px-3",
+                "hover:bg-accent hover:text-accent-foreground",
+                "transition-all duration-200",
+                !showLabels ? "justify-center" : "justify-start",
+                "rounded-xl"
+              )}
+            >
+              <div className={cn(
+                "flex items-center",
+                showLabels ? "gap-3" : "justify-center"
+              )}>
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                  "bg-purple-200"
+                )}>
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                {showLabels && <span>Flow Help</span>}
+              </div>
+            </Button>
+          </a>
+
           <div className={cn(
             "flex items-center",
             !showLabels ? "justify-center" : "gap-3 px-2"
