@@ -70,23 +70,32 @@ export function FlowDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6 w-[95%] sm:w-auto">
-        <DialogHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <DialogTitle>{editingFlow ? "Edit Flow" : "Create Flow"}</DialogTitle>
-              <DialogDescription>
-                Configure your automation flow here.
-              </DialogDescription>
-            </div>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsImportOpen(true)}
+              size="sm"
             >
               Import Flow
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href="https://gpts4u.com/aiaudioflows" target="_blank" rel="noopener noreferrer">Flow Help</a>
+            </Button>
           </div>
-        </DialogHeader>
+        </div>
+        <div className="text-center mb-6">
+          <DialogTitle>{editingFlow ? "Edit Flow" : "Create Flow"}</DialogTitle>
+          <DialogDescription>
+            Configure your automation flow here or click "Import Flow" to import an existing flow. The "Flow Help" button will enable you work with ChatGPT to create your own personalized flow, it will do all the hard work for you. Click the "Flow Help" button to get started.
+          </DialogDescription>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

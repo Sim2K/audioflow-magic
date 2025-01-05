@@ -53,7 +53,7 @@ export function ImportFlowDialog({
           <Textarea
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
-            placeholder="Paste your flow JSON here..."
+            placeholder="Paste your flow JSON here... the 'Flow help' button will enable you work with ChatGPT to create your own personalized flow. Click the 'Flow help' button on the previous page to get started."
             className="font-mono min-h-[200px] resize-none"
           />
         </div>
