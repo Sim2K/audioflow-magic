@@ -87,6 +87,11 @@ src/
 1. **Flow Dialog** (`/components/flows/FlowDialog.tsx`)
    ```typescript
    Features:
+   - Import Flow functionality:
+     - Import button in dialog header
+     - Separate import dialog with JSON input
+     - JSON validation and parsing
+     - Auto-fill form fields from imported data
    - Responsive form layout:
      - Mobile: Single column, 95% screen width with padding
      - Desktop: Two columns, 800px max width

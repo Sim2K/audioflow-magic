@@ -20,7 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { Flow } from "@/utils/storage";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ImportFlowDialog } from "./ImportFlowDialog";
 
 interface FlowDialogProps {
   open: boolean;
@@ -29,7 +30,7 @@ interface FlowDialogProps {
   editingFlow?: Flow;
 }
 
-const defaultValues = {
+export const defaultValues = {
   name: "",
   endpoint: "",
   format: '{ "details": { "title": "", "summary": "", "valid_points": [] } }',
@@ -43,6 +44,7 @@ export function FlowDialog({
   onSubmit,
   editingFlow,
 }: FlowDialogProps) {
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const form = useForm<Omit<Flow, "id">>({
     defaultValues: editingFlow || defaultValues,
   });
@@ -55,14 +57,35 @@ export function FlowDialog({
     }
   }, [editingFlow, form]);
 
+  const handleImport = (importedData: Partial<Flow>) => {
+    form.reset({
+      name: importedData.name || "",
+      instructions: importedData.instructions || "",
+      prompt: importedData.prompt || defaultValues.prompt,
+      format: importedData.format || defaultValues.format,
+      endpoint: importedData.endpoint || "",
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6 w-[95%] sm:w-auto">
         <DialogHeader>
-          <DialogTitle>{editingFlow ? "Edit Flow" : "Create Flow"}</DialogTitle>
-          <DialogDescription>
-            Configure your automation flow here.
-          </DialogDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <DialogTitle>{editingFlow ? "Edit Flow" : "Create Flow"}</DialogTitle>
+              <DialogDescription>
+                Configure your automation flow here.
+              </DialogDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsImportOpen(true)}
+            >
+              Import Flow
+            </Button>
+          </div>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -164,6 +187,11 @@ export function FlowDialog({
             </DialogFooter>
           </form>
         </Form>
+        <ImportFlowDialog
+          open={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          onImport={handleImport}
+        />
       </DialogContent>
     </Dialog>
   );
