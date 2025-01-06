@@ -202,7 +202,7 @@ const Index = () => {
                 )}
               </Button>
               {isRecording && (
-                <div className="fixed inset-0 animate-pulse-ring bg-red-500/10 pointer-events-none border border-gray-700/20 rounded-full scale-50" />
+                <div className="fixed inset-0 bg-red-500/25 pointer-events-none border border-gray-70/5 rounded-full animate-pulse-ring scale-35" />
               )}
               <p className="text-sm text-muted-foreground text-center">
                 {!selectedFlow

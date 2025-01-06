@@ -19,12 +19,12 @@ export function FlowList({
   selectedFlow,
 }: FlowListProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {flows.map((flow) => (
         <div
           key={flow.id}
           className={cn(
-            "group p-4 rounded-lg border bg-white cursor-pointer transition-colors",
+            "group p-2 rounded-lg border bg-white cursor-pointer transition-colors",
             "hover:border-primary/20 hover:bg-primary/5",
             selectedFlow?.id === flow.id && "border-primary/30 bg-primary/10"
           )}

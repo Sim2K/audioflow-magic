@@ -26,18 +26,18 @@ export function FlowBoard({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
+        <div className="flex items-center">
           <h1 className="text-2xl font-semibold">Flows</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+        <div className="flex w-full sm:w-auto gap-2">
+          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none justify-center">
             <a href="https://gpts4u.com/aiaudioflows" target="_blank" rel="noopener noreferrer">
               <Sparkles className="h-4 w-4 mr-2" />
               Flow Help
             </a>
           </Button>
-          <Button onClick={onNewFlow} size="sm">
+          <Button onClick={onNewFlow} size="sm" className="flex-1 sm:flex-none justify-center">
             <Plus className="h-4 w-4 mr-2" />
             Add new flow
           </Button>
@@ -46,9 +46,8 @@ export function FlowBoard({
 
       {/* Board Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full flex gap-4 p-4">
+        <div className="h-full px-1 py-0.5">
           <div className={cn(
-            "flex-1 min-w-[300px] max-w-md",
             isMobileView && selectedFlow ? "hidden" : "block",
             "md:block"
           )}>
@@ -63,60 +62,62 @@ export function FlowBoard({
           
           {selectedFlow && (
             <div className={cn(
-              "flex-1",
+              "bg-white rounded-lg p-2",
               isMobileView && !selectedFlow ? "hidden" : "block",
               "md:block"
             )}>
-              <div className="bg-white rounded-lg border p-6 h-full">
-                <div className="flex items-start justify-between gap-4 mb-6">
-                  <div>
-                    {isMobileView && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onFlowSelect(null)}
-                        className="mb-2 -ml-2 text-muted-foreground"
-                      >
-                        <ChevronLeft className="h-4 w-4 mr-2" />
-                        Back to Flows
-                      </Button>
-                    )}
-                    <h2 className="text-xl font-semibold">{selectedFlow.name}</h2>
-                  </div>
+              <div className="space-y-3">
+                {isMobileView && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onFlowSelect(null)}
+                    className="flex items-center -ml-2 text-muted-foreground"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Back to Flows
+                  </Button>
+                )}
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">{selectedFlow.name}</h2>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onEdit(selectedFlow)}
-                    className="shrink-0"
+                    className="flex items-center gap-2"
                   >
-                    <Pencil className="h-4 w-4 mr-2" />
+                    <Pencil className="h-4 w-4" />
                     Edit Flow
                   </Button>
                 </div>
-                <div className="space-y-6">
+
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Endpoint</label>
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                    <h3 className="text-sm font-medium mb-2">Endpoint</h3>
+                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
                       {selectedFlow.endpoint}
                     </div>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium mb-2">Instructions</label>
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md whitespace-pre-wrap">
+                    <h3 className="text-sm font-medium mb-2">Instructions</h3>
+                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
                       {selectedFlow.instructions || "No instructions provided"}
                     </div>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium mb-2">Prompt Template</label>
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                    <h3 className="text-sm font-medium mb-2">Prompt Template</h3>
+                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
                       {selectedFlow.prompt}
                     </div>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium mb-2">Format Template</label>
-                    <pre className="text-sm bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap">
+                    <h3 className="text-sm font-medium mb-2">Format Template</h3>
+                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
                       {selectedFlow.format}
-                    </pre>
+                    </div>
                   </div>
                 </div>
               </div>
