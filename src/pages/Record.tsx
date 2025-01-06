@@ -16,11 +16,13 @@ import { AudioRecorder } from "@/utils/audioRecorder";
 import { transcribeAudio } from "@/utils/openai";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import JsonViewer from "@/components/JsonViewer";
+import { ProcessingDialog } from "@/components/ProcessingDialog";
 
 const audioRecorder = new AudioRecorder();
 
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [flows, setFlows] = useState<Flow[]>([]);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [transcript, setTranscript] = useState<string>("");
@@ -68,11 +70,13 @@ const Index = () => {
         console.error('Error saving transcript history:', error);
       }
 
+      setIsProcessing(false);
       toast({
         title: "Processing completed",
         description: "Your recording has been processed successfully.",
       });
     } catch (error) {
+      setIsProcessing(false);
       console.error("Error processing recording:", error);
       toast({
         title: "Error",
@@ -121,12 +125,14 @@ const Index = () => {
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
 
+      setIsProcessing(true);
       toast({
         title: "Recording stopped",
         description: "Processing your recording...",
       });
       await processRecording(audioBlob);
     } catch (error) {
+      setIsProcessing(false);
       console.error("Error stopping recording:", error);
       toast({
         title: "Error",
@@ -139,6 +145,7 @@ const Index = () => {
 
   return (
     <div className="container mx-auto p-4 space-y-4">
+      <ProcessingDialog open={isProcessing} />
       <Card>
         <CardHeader>
           <CardTitle>Record Audio</CardTitle>
@@ -177,7 +184,7 @@ const Index = () => {
               </Card>
             )}
 
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-col items-center space-y-2">
               <Button
                 size="lg"
                 className={`rounded-full p-8 cursor-pointer transition-all duration-200 active:scale-95 ${
@@ -195,25 +202,25 @@ const Index = () => {
                 )}
               </Button>
               {isRecording && (
-                <div className="absolute inset-0 rounded-full animate-pulse-ring border-2 border-red-500 pointer-events-none" />
+                <div className="fixed inset-0 animate-pulse-ring bg-red-500/10 pointer-events-none border border-gray-700/20 rounded-full scale-50" />
+              )}
+              <p className="text-sm text-muted-foreground text-center">
+                {!selectedFlow
+                  ? "Select a flow to start recording"
+                  : isRecording
+                  ? "Recording in progress..."
+                  : "Click to start recording"}
+              </p>
+              {audioUrl && response?.theFlowTitle && (
+                <a
+                  href={audioUrl}
+                  download={`${response.theFlowTitle.replace(/[^a-zA-Z0-9]/g, '-')}.mp3`}
+                  className="text-sm font-medium text-primary hover:text-primary/80"
+                >
+                  Download Recording
+                </a>
               )}
             </div>
-            {audioUrl && (
-              <a
-                href={audioUrl}
-                download="recording.mp3"
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary hover:text-primary/80"
-              >
-                Download Recording
-              </a>
-            )}
-            <p className="text-sm text-muted-foreground">
-              {!selectedFlow
-                ? "Select a flow to start recording"
-                : isRecording
-                ? "Recording in progress..."
-                : "Click to start recording"}
-            </p>
           </div>
         </CardContent>
       </Card>
