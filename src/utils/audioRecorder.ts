@@ -2,8 +2,9 @@ export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private isRecording: boolean = false;
-  private chunkInterval: number = 250; // Collect chunks more frequently
+  private chunkInterval: number = 250;
   private lastChunkTime: number = 0;
+  private mediaStream: MediaStream | null = null;
 
   async startRecording(): Promise<void> {
     try {
@@ -11,19 +12,23 @@ export class AudioRecorder {
         return; // Already recording
       }
 
+      console.log('Requesting media stream...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          channelCount: 1, // Mono audio
-          sampleRate: 8000, // Minimum sample rate good enough for voice
+          channelCount: 1,
+          sampleRate: 44100, // Higher sample rate for better visualization
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         } 
       });
+      console.log('Media stream obtained');
+
+      this.mediaStream = stream;
 
       this.mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 12000 // 12 kbps - optimized for voice at minimum size
+        audioBitsPerSecond: 128000 // Higher bitrate for better quality
       });
 
       this.audioChunks = [];
@@ -42,8 +47,9 @@ export class AudioRecorder {
         this.cleanup();
       };
 
-      // Start recording and request data more frequently
+      // Start recording with smaller chunks for more frequent updates
       this.mediaRecorder.start(this.chunkInterval);
+      console.log('Recording started with stream:', this.mediaStream.id);
     } catch (error) {
       console.error("Error accessing microphone:", error);
       this.cleanup();
@@ -51,14 +57,25 @@ export class AudioRecorder {
     }
   }
 
-  private cleanup(): void {
-    if (this.mediaRecorder?.stream) {
-      this.mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+  cleanup(): void {
+    if (this.mediaRecorder) {
+      this.mediaRecorder.removeEventListener('dataavailable', () => {});
+      this.mediaRecorder.removeEventListener('error', () => {});
+      this.mediaRecorder = null;
     }
-    this.mediaRecorder = null;
+
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
+
     this.audioChunks = [];
     this.isRecording = false;
     this.lastChunkTime = 0;
+  }
+
+  getMediaStream(): MediaStream | null {
+    return this.mediaStream;
   }
 
   stopRecording(): Promise<Blob> {
