@@ -267,4 +267,12 @@ src/
 - Flow Help (`https://gpts4u.com/aiaudioflows`) - External help documentation
 - Settings (`/settings`) - Application settings
 
+### Deployment Configuration
+
+### Netlify Configuration
+- **_redirects**: Added to handle SPA routing
+  - Location: `/public/_redirects`
+  - Configuration: All routes redirect to index.html with 200 status
+  - Purpose: Ensures proper routing for direct URL access and page refreshes
+
 ### UI Components{{ ... }}
