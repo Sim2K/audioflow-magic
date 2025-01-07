@@ -18,7 +18,7 @@ export class AudioRecorder {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
-          sampleRate: 16000, // Better quality sample rate for speech
+          sampleRate: 16000, // Standard speech recognition rate
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -29,9 +29,14 @@ export class AudioRecorder {
       this.mediaStream = stream;
       this.recordingStartTime = Date.now();
 
+      // Target bitrate calculation:
+      // 25MB = 25 * 1024 * 1024 bytes = 26,214,400 bytes
+      // 70 minutes = 4200 seconds
+      // Safe target bitrate = (26,214,400 * 8) / 4200 * 0.8 ≈ 40,000 bits/second
+      // Using 0.8 as a safety factor for codec overhead
       this.mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 48000 // Optimized bitrate for 24MB/70min with good quality
+        audioBitsPerSecond: 40000 // Adjusted bitrate with safety margin
       });
 
       this.audioChunks = [];
