@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import JsonViewer from "@/components/JsonViewer";
 import { ProcessingDialog } from "@/components/ProcessingDialog";
 import { AudioVisualizer } from "@/components/recorder/AudioVisualizer";
+import { RecordingTimer } from "@/components/recorder/RecordingTimer";
 
 const audioRecorder = new AudioRecorder();
 
@@ -242,10 +243,16 @@ const Index = () => {
             </div>
           </div>
 
-          <AudioVisualizer 
-            isRecording={isRecording}
-            mediaStream={audioRecorder.getMediaStream()}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AudioVisualizer 
+              isRecording={isRecording}
+              mediaStream={audioRecorder.getMediaStream()}
+            />
+            <RecordingTimer 
+              isRecording={isRecording}
+              startTime={recordingStartTime}
+            />
+          </div>
 
           <Tabs defaultValue="transcript" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
