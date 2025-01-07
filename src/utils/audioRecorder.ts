@@ -2,41 +2,66 @@ export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private isRecording: boolean = false;
-  private chunkInterval: number = 250;
+  private chunkInterval: number = 2000;
   private lastChunkTime: number = 0;
   private mediaStream: MediaStream | null = null;
   private recordingStartTime: number = 0;
   private readonly MAX_DURATION_MS: number = 4200000; // 70 minutes
+  private totalSize: number = 0;
+  private audioContext: AudioContext | null = null;
+
+  private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
+    // Create audio context
+    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Create source from input stream
+    const source = this.audioContext.createMediaStreamSource(stream);
+    
+    // Create channel merger to force mono
+    const merger = this.audioContext.createChannelMerger(1);
+    
+    // Connect source to merger
+    source.connect(merger);
+    
+    // Create destination
+    const dest = this.audioContext.createMediaStreamDestination();
+    merger.connect(dest);
+    
+    return dest.stream;
+  }
 
   async startRecording(): Promise<void> {
     try {
       if (this.isRecording || this.mediaRecorder?.state === "recording") {
-        return; // Already recording
+        return;
       }
 
       console.log('Requesting media stream...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const initialStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
-          sampleRate: 16000, // Standard speech recognition rate
+          sampleRate: 16000,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         } 
       });
-      console.log('Media stream obtained');
 
-      this.mediaStream = stream;
+      // Force mono audio using Web Audio API
+      const monoStream = await this.createMonoStream(initialStream);
+      
+      // Log actual audio settings after mono conversion
+      const track = monoStream.getAudioTracks()[0];
+      const settings = track.getSettings();
+      console.log('Audio settings after mono conversion:', settings);
+
+      this.mediaStream = monoStream;
       this.recordingStartTime = Date.now();
+      this.totalSize = 0;
 
-      // Target bitrate calculation:
-      // 25MB = 25 * 1024 * 1024 bytes = 26,214,400 bytes
-      // 70 minutes = 4200 seconds
-      // Safe target bitrate = (26,214,400 * 8) / 4200 * 0.8 ≈ 40,000 bits/second
-      // Using 0.8 as a safety factor for codec overhead
-      this.mediaRecorder = new MediaRecorder(stream, {
+      this.mediaRecorder = new MediaRecorder(monoStream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 40000 // Adjusted bitrate with safety margin
+        audioBitsPerSecond: 32000
       });
 
       this.audioChunks = [];
@@ -46,13 +71,29 @@ export class AudioRecorder {
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
+          this.totalSize += event.data.size;
           this.lastChunkTime = Date.now();
 
+          // Log effective bitrate
+          const duration = (Date.now() - this.recordingStartTime) / 1000;
+          const effectiveBitrate = (this.totalSize * 8) / duration;
+          const projectedSize = (effectiveBitrate * this.MAX_DURATION_MS) / (8 * 1000 * 1024 * 1024);
+          
+          console.log(`Current recording stats:
+            - Duration: ${duration.toFixed(1)}s
+            - Total size: ${(this.totalSize / (1024 * 1024)).toFixed(2)}MB
+            - Effective bitrate: ${(effectiveBitrate / 1000).toFixed(1)}kbps
+            - Projected 70min size: ${projectedSize.toFixed(2)}MB`);
+
           // Check recording duration
-          const duration = Date.now() - this.recordingStartTime;
-          if (duration >= this.MAX_DURATION_MS) {
-            console.log('Maximum recording duration reached (70 minutes)');
+          if (duration * 1000 >= this.MAX_DURATION_MS) {
+            console.log('Maximum recording duration reached');
             this.stopRecording().catch(console.error);
+          }
+
+          // Check if projected size exceeds limit
+          if (projectedSize > 24) {
+            console.warn('Warning: Projected file size exceeds 24MB limit');
           }
         }
       };
@@ -62,9 +103,8 @@ export class AudioRecorder {
         this.cleanup();
       };
 
-      // Start recording with smaller chunks for more frequent updates
       this.mediaRecorder.start(this.chunkInterval);
-      console.log('Recording started with stream:', this.mediaStream.id);
+      console.log('Recording started with enforced mono audio');
     } catch (error) {
       console.error("Error accessing microphone:", error);
       this.cleanup();
@@ -84,9 +124,15 @@ export class AudioRecorder {
       this.mediaStream = null;
     }
 
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+
     this.audioChunks = [];
     this.isRecording = false;
     this.lastChunkTime = 0;
+    this.totalSize = 0;
   }
 
   getMediaStream(): MediaStream | null {
