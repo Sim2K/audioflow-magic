@@ -39,6 +39,10 @@ src/
      - Target size: < 25MB for 60-minute recordings
      - Size warning at 80% of limit
      - Automatic file size validation
+   - Download features:
+     - Displays file size in MB
+     - Shows recording duration in minutes and seconds
+     - Format: Download Recording (1.3MB / 1m 34s)
 
 2. **Flow Management**
    - Custom flow creation and editing

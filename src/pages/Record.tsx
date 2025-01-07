@@ -29,6 +29,8 @@ const Index = () => {
   const [transcript, setTranscript] = useState<string>("");
   const [response, setResponse] = useState<any>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioInfo, setAudioInfo] = useState<{ size: string; duration: string } | null>(null);
+  const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,6 +103,8 @@ const Index = () => {
       await audioRecorder.startRecording();
       setIsRecording(true);
       setAudioUrl(null);
+      setAudioInfo(null);
+      setRecordingStartTime(Date.now());
       toast({
         title: "Recording started",
         description: "Your audio is now being recorded.",
@@ -122,9 +126,23 @@ const Index = () => {
       setIsRecording(false); // Set this first to prevent multiple stop attempts
       const audioBlob = await audioRecorder.stopRecording();
 
+      // Calculate file size in MB
+      const sizeMB = (audioBlob.size / (1024 * 1024)).toFixed(1);
+      
+      // Calculate duration from start time
+      let durationStr = '0m 00s';
+      if (recordingStartTime) {
+        const durationMs = Date.now() - recordingStartTime;
+        const minutes = Math.floor(durationMs / 60000);
+        const seconds = Math.floor((durationMs % 60000) / 1000);
+        durationStr = `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+      }
+      
       // Create download URL for the audio
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
+      setAudioInfo({ size: `${sizeMB}MB`, duration: durationStr });
+      setRecordingStartTime(null);
 
       setIsProcessing(true);
       toast({
@@ -218,7 +236,7 @@ const Index = () => {
                   download={`${response.theFlowTitle.replace(/[^a-zA-Z0-9]/g, '-')}.mp3`}
                   className="text-sm font-medium text-primary hover:text-primary/80"
                 >
-                  Download Recording
+                  Download Recording {audioInfo && `(${audioInfo.size} / ${audioInfo.duration})`}
                 </a>
               )}
             </div>
