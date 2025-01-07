@@ -18,7 +18,7 @@ export class AudioRecorder {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
-          sampleRate: 8000, // Reduced sample rate - optimized for speech compression
+          sampleRate: 16000, // Better quality sample rate for speech
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -31,7 +31,7 @@ export class AudioRecorder {
 
       this.mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 8000 // Ultra-compressed bitrate for maximum duration
+        audioBitsPerSecond: 48000 // Optimized bitrate for 24MB/70min with good quality
       });
 
       this.audioChunks = [];
