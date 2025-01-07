@@ -11,7 +11,7 @@ export function AudioVisualizer({ isRecording, mediaStream }: AudioVisualizerPro
 
   return (
     <div className="w-full bg-muted/30 rounded-lg p-4 my-4">
-      <div className="w-full h-[200px] md:h-[300px]">
+      <div className="w-full h-[80px] md:h-[120px]">
         <FrequencySpectrum 
           isRecording={isRecording}
           mediaStream={mediaStream}
