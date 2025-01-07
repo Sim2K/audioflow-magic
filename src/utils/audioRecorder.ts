@@ -5,6 +5,8 @@ export class AudioRecorder {
   private chunkInterval: number = 250;
   private lastChunkTime: number = 0;
   private mediaStream: MediaStream | null = null;
+  private recordingStartTime: number = 0;
+  private readonly MAX_DURATION_MS: number = 4200000; // 70 minutes
 
   async startRecording(): Promise<void> {
     try {
@@ -16,7 +18,7 @@ export class AudioRecorder {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
-          sampleRate: 44100, // Higher sample rate for better visualization
+          sampleRate: 8000, // Reduced sample rate - optimized for speech compression
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -25,10 +27,11 @@ export class AudioRecorder {
       console.log('Media stream obtained');
 
       this.mediaStream = stream;
+      this.recordingStartTime = Date.now();
 
       this.mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 128000 // Higher bitrate for better quality
+        audioBitsPerSecond: 8000 // Ultra-compressed bitrate for maximum duration
       });
 
       this.audioChunks = [];
@@ -39,6 +42,13 @@ export class AudioRecorder {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
           this.lastChunkTime = Date.now();
+
+          // Check recording duration
+          const duration = Date.now() - this.recordingStartTime;
+          if (duration >= this.MAX_DURATION_MS) {
+            console.log('Maximum recording duration reached (70 minutes)');
+            this.stopRecording().catch(console.error);
+          }
         }
       };
 
