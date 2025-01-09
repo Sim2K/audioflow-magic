@@ -14,40 +14,32 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
   }
 
   try {
-    // Convert WebM to mp3 format using Web Audio API
-    const audioData = await audioBlob.arrayBuffer();
-    const audioContext = new AudioContext();
-    const audioBuffer = await audioContext.decodeAudioData(audioData);
-    
-    // Create MP3 blob with optimized settings
-    const mp3Blob = await convertToMp3(audioBuffer);
-    
-    // Check file size
+    // Check WebM file size first
     const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-    if (mp3Blob.size > MAX_FILE_SIZE) {
-      throw new Error(`Audio file size (${(mp3Blob.size / 1024 / 1024).toFixed(2)}MB) exceeds the maximum limit of 25MB. Please record a shorter message or check audio settings.`);
+    if (audioBlob.size > MAX_FILE_SIZE) {
+      throw new Error(`Audio file size (${(audioBlob.size / 1024 / 1024).toFixed(2)}MB) exceeds the maximum limit of 25MB. Please record a shorter message or check audio settings.`);
     }
 
     // Warn if file size is approaching limit
-    if (mp3Blob.size > MAX_FILE_SIZE * 0.8) {
-      console.warn(`Audio file size (${(mp3Blob.size / 1024 / 1024).toFixed(2)}MB) is approaching the 25MB limit.`);
+    if (audioBlob.size > MAX_FILE_SIZE * 0.8) {
+      console.warn(`Audio file size (${(audioBlob.size / 1024 / 1024).toFixed(2)}MB) is approaching the 25MB limit.`);
     }
 
     // Calculate chunks if file is large (over 24MB)
     const MAX_CHUNK_SIZE = 24 * 1024 * 1024; // 24MB
     let transcriptParts: string[] = [];
     
-    if (mp3Blob.size > MAX_CHUNK_SIZE) {
+    if (audioBlob.size > MAX_CHUNK_SIZE) {
       // Split into chunks
-      const chunks = Math.ceil(mp3Blob.size / MAX_CHUNK_SIZE);
+      const chunks = Math.ceil(audioBlob.size / MAX_CHUNK_SIZE);
       for (let i = 0; i < chunks; i++) {
         const start = i * MAX_CHUNK_SIZE;
-        const end = Math.min((i + 1) * MAX_CHUNK_SIZE, mp3Blob.size);
-        const chunk = mp3Blob.slice(start, end, 'audio/mp3');
+        const end = Math.min((i + 1) * MAX_CHUNK_SIZE, audioBlob.size);
+        const chunk = audioBlob.slice(start, end, 'audio/webm;codecs=opus');
         
         // Transcribe chunk
         const formData = new FormData();
-        formData.append('file', chunk, 'chunk.mp3');
+        formData.append('file', chunk, 'chunk.webm');
         formData.append('model', 'whisper-1');
         
         const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -59,17 +51,16 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error?.message || 'Failed to transcribe audio chunk');
+          throw new Error(`Transcription failed: ${response.statusText}`);
         }
 
-        const data: WhisperResponse = await response.json();
-        transcriptParts.push(data.text);
+        const result: WhisperResponse = await response.json();
+        transcriptParts.push(result.text);
       }
     } else {
-      // Process as single file
+      // Transcribe entire file
       const formData = new FormData();
-      formData.append('file', mp3Blob, 'audio.mp3');
+      formData.append('file', audioBlob, 'audio.webm');
       formData.append('model', 'whisper-1');
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -81,20 +72,23 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to transcribe audio');
+        throw new Error(`Transcription failed: ${response.statusText}`);
       }
 
-      const data: WhisperResponse = await response.json();
-      transcriptParts = [data.text];
+      const result: WhisperResponse = await response.json();
+      transcriptParts = [result.text];
     }
 
     const transcript = transcriptParts.join(' ');
 
-    // Second step: Process transcript with GPT-4
-    // Use flow.endpoint if provided, otherwise use default
+    // Now convert to MP3 for download after transcription is complete
+    const audioData = await audioBlob.arrayBuffer();
+    const audioContext = new AudioContext();
+    const audioBuffer = await audioContext.decodeAudioData(audioData);
+    const mp3Blob = await convertToMp3(audioBuffer);
+
+    // Process with GPT-4
     const endpoint = flow.endpoint || DEFAULT_COMPLETION_ENDPOINT;
-    
     const completionResponse = await fetch(`https://api.openai.com/v1/chat/completions`, {
       method: 'POST',
       headers: {
