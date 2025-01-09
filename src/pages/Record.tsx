@@ -166,6 +166,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col h-full px-1 py-0.5">
+      <ProcessingDialog open={isProcessing} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
         <div className="flex items-center">
           <h2 className="text-2xl font-semibold">Record Audio</h2>
