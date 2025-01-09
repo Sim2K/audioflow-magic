@@ -268,9 +268,9 @@ const Index = () => {
                     The raw transcript from your audio recording.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative">
                   <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent pr-2">
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
                       {transcript || "No transcript available"}
                     </p>
                   </div>
