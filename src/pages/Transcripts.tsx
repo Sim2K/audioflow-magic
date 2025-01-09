@@ -70,9 +70,11 @@ const Transcripts = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {selectedTranscript.transcript}
-                  </p>
+                  <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent pr-2">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedTranscript.transcript}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
