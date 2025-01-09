@@ -165,177 +165,183 @@ const Index = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      <ProcessingDialog open={isProcessing} />
-      <Card>
-        <CardHeader>
-          <CardTitle>Record Audio</CardTitle>
-          <CardDescription>
-            Select a flow and record your audio for processing
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col space-y-4">
-            <Select
-              value={selectedFlow?.id || ""}
-              onValueChange={(value) =>
-                setSelectedFlow(flows.find((f) => f.id === value) || null)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a flow" />
-              </SelectTrigger>
-              <SelectContent>
-                {flows.map((flow) => (
-                  <SelectItem key={flow.id} value={flow.id}>
-                    {flow.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="flex flex-col h-full px-1 py-0.5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
+        <div className="flex items-center">
+          <h2 className="text-2xl font-semibold">Record Audio</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Select a flow and record your audio for processing
+        </p>
+      </div>
 
-            {selectedFlow?.instructions && (
-              <Card className="bg-muted">
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm font-medium">Instructions</CardTitle>
-                </CardHeader>
-                <CardContent className="py-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                  {selectedFlow.instructions}
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="flex flex-col items-center space-y-2">
-              <Button
-                size="lg"
-                className={`rounded-full p-8 cursor-pointer transition-all duration-200 active:scale-95 ${
-                  isRecording
-                    ? "bg-red-500 hover:bg-red-600 hover:shadow-lg"
-                    : "bg-purple-500 hover:bg-purple-600 hover:shadow-lg"
-                }`}
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={!selectedFlow}
-              >
-                {isRecording ? (
-                  <Square className="h-6 w-6" />
-                ) : (
-                  <Mic className="h-6 w-6" />
-                )}
-              </Button>
-              {isRecording && (
-                <div className="fixed inset-0 bg-red-500/25 pointer-events-none border border-gray-70/5 rounded-full animate-pulse-ring scale-35" />
-              )}
-              <p className="text-sm text-muted-foreground text-center">
-                {!selectedFlow
-                  ? "Select a flow to start recording"
-                  : isRecording
-                  ? "Recording in progress..."
-                  : "Click to start recording"}
-              </p>
-              {audioUrl && response?.theFlowTitle && (
-                <a
-                  href={audioUrl}
-                  download={`${response.theFlowTitle.replace(/[^a-zA-Z0-9]/g, '-')}.mp3`}
-                  className="text-sm font-medium text-primary hover:text-primary/80"
+      <div className="pt-4">
+        <Card>
+          <div className="pt-4">
+            <CardContent>
+              <div className="flex flex-col space-y-4">
+                <Select
+                  value={selectedFlow?.id || ""}
+                  onValueChange={(value) =>
+                    setSelectedFlow(flows.find((f) => f.id === value) || null)
+                  }
                 >
-                  Download Recording {audioInfo && `(${audioInfo.size} / ${audioInfo.duration})`}
-                </a>
-              )}
-            </div>
-          </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a flow" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {flows.map((flow) => (
+                      <SelectItem key={flow.id} value={flow.id}>
+                        {flow.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AudioVisualizer 
-              isRecording={isRecording}
-              mediaStream={audioRecorder.getMediaStream()}
-            />
-            <RecordingTimer 
-              isRecording={isRecording}
-              startTime={recordingStartTime}
-            />
-          </div>
+                {selectedFlow?.instructions && (
+                  <Card className="bg-muted">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm font-medium">Instructions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedFlow.instructions}
+                    </CardContent>
+                  </Card>
+                )}
 
-          <Tabs defaultValue="transcript" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="transcript">Transcript</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="response">AI Response</TabsTrigger>
-            </TabsList>
-            <TabsContent value="transcript" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Transcript</CardTitle>
-                      <CardDescription>
-                        The raw transcript from your audio recording.
-                      </CardDescription>
-                    </div>
-                    <CopyButton text={transcript || ''} label="Copy transcript" />
-                  </div>
-                </CardHeader>
-                <CardContent className="relative">
-                  <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent pr-2">
-                    <div className="text-sm text-muted-foreground whitespace-pre-line break-words">
-                      {transcript || "No transcript available"}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="details" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Details</CardTitle>
-                      <CardDescription>
-                        Recording details and metadata
-                      </CardDescription>
-                    </div>
-                    <CopyButton 
-                      text={audioInfo ? `Size: ${audioInfo.size}\nDuration: ${audioInfo.duration}` : ''} 
-                      label="Copy details" 
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {response ? (
-                    <JsonViewer data={response} />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No processed response available
-                    </p>
+                <div className="flex flex-col items-center space-y-2">
+                  <Button
+                    size="lg"
+                    className={`rounded-full p-8 cursor-pointer transition-all duration-200 active:scale-95 ${
+                      isRecording
+                        ? "bg-red-500 hover:bg-red-600 hover:shadow-lg"
+                        : "bg-purple-500 hover:bg-purple-600 hover:shadow-lg"
+                    }`}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={!selectedFlow}
+                  >
+                    {isRecording ? (
+                      <Square className="h-6 w-6" />
+                    ) : (
+                      <Mic className="h-6 w-6" />
+                    )}
+                  </Button>
+                  {isRecording && (
+                    <div className="fixed inset-0 bg-red-500/25 pointer-events-none border border-gray-70/5 rounded-full animate-pulse-ring scale-35" />
                   )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="response" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>AI Response</CardTitle>
-                      <CardDescription>
-                        AI-processed response based on your selected flow
-                      </CardDescription>
-                    </div>
-                    <CopyButton 
-                      text={response ? JSON.stringify(response, null, 2) : ''} 
-                      label="Copy AI response" 
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {response ? JSON.stringify(response, null, 2) : "No response available"}
-                  </pre>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {!selectedFlow
+                      ? "Select a flow to start recording"
+                      : isRecording
+                      ? "Recording in progress..."
+                      : "Click to start recording"}
+                  </p>
+                  {audioUrl && response?.theFlowTitle && (
+                    <a
+                      href={audioUrl}
+                      download={`${response.theFlowTitle.replace(/[^a-zA-Z0-9]/g, '-')}.mp3`}
+                      className="text-sm font-medium text-primary hover:text-primary/80"
+                    >
+                      Download Recording {audioInfo && `(${audioInfo.size} / ${audioInfo.duration})`}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AudioVisualizer 
+                  isRecording={isRecording}
+                  mediaStream={audioRecorder.getMediaStream()}
+                />
+                <RecordingTimer 
+                  isRecording={isRecording}
+                  startTime={recordingStartTime}
+                />
+              </div>
+
+              <Tabs defaultValue="transcript" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="transcript">Transcript</TabsTrigger>
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="airesponse">AI Response</TabsTrigger>
+                </TabsList>
+                <TabsContent value="transcript" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Transcript</CardTitle>
+                          <CardDescription>
+                            The raw transcript from your audio recording.
+                          </CardDescription>
+                        </div>
+                        <CopyButton text={transcript || ''} label="Copy transcript" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="relative">
+                      <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent pr-2">
+                        <div className="text-sm text-muted-foreground whitespace-pre-line break-words">
+                          {transcript || "No transcript available"}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="details" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Details</CardTitle>
+                          <CardDescription>
+                            Recording details and metadata
+                          </CardDescription>
+                        </div>
+                        <CopyButton 
+                          text={audioInfo ? `Size: ${audioInfo.size}\nDuration: ${audioInfo.duration}` : ''} 
+                          label="Copy details" 
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {response ? (
+                        <JsonViewer data={response} />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No processed response available
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="airesponse" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>AI Response</CardTitle>
+                          <CardDescription>
+                            AI-processed response based on your selected flow
+                          </CardDescription>
+                        </div>
+                        <CopyButton 
+                          text={response ? JSON.stringify(response, null, 2) : ''} 
+                          label="Copy AI response" 
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {response ? JSON.stringify(response, null, 2) : "No response available"}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };

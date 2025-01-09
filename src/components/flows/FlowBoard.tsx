@@ -2,6 +2,7 @@ import { Flow } from "@/utils/storage";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, Pencil, Sparkles } from "lucide-react";
 import { FlowList } from "./FlowList";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface FlowBoardProps {
@@ -26,7 +27,7 @@ export function FlowBoard({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b mb-6">
         <div className="flex items-center">
           <h1 className="text-2xl font-semibold">Flows</h1>
         </div>
@@ -62,62 +63,60 @@ export function FlowBoard({
           
           {selectedFlow && (
             <div className={cn(
-              "bg-white rounded-lg p-2",
+              "bg-white rounded-lg p-4 mt-4",
               isMobileView && !selectedFlow ? "hidden" : "block",
               "md:block"
             )}>
+              {isMobileView && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onFlowSelect(null)}
+                  className="flex items-center -ml-2 text-muted-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  Back to Flows
+                </Button>
+              )}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">{selectedFlow.name}</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(selectedFlow)}
+                  className="flex items-center gap-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit Flow
+                </Button>
+              </div>
+
               <div className="space-y-3">
-                {isMobileView && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onFlowSelect(null)}
-                    className="flex items-center -ml-2 text-muted-foreground"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    Back to Flows
-                  </Button>
-                )}
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">{selectedFlow.name}</h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onEdit(selectedFlow)}
-                    className="flex items-center gap-2"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit Flow
-                  </Button>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Endpoint</h3>
+                  <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                    {selectedFlow.endpoint}
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Endpoint</h3>
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                      {selectedFlow.endpoint}
-                    </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Instructions</h3>
+                  <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                    {selectedFlow.instructions || "No instructions provided"}
                   </div>
+                </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Instructions</h3>
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                      {selectedFlow.instructions || "No instructions provided"}
-                    </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Prompt Template</h3>
+                  <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                    {selectedFlow.prompt}
                   </div>
+                </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Prompt Template</h3>
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                      {selectedFlow.prompt}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Format Template</h3>
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                      {selectedFlow.format}
-                    </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Format Template</h3>
+                  <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                    {selectedFlow.format}
                   </div>
                 </div>
               </div>

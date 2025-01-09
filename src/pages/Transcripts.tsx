@@ -41,7 +41,17 @@ const Transcripts = () => {
 
   if (selectedTranscript) {
     return (
-      <div className="container mx-auto p-4 space-y-4">
+      <div className="flex flex-col h-full px-1 py-0.5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
+          <div className="flex items-center">
+            <h2 className="text-2xl font-semibold">
+              {selectedTranscript.response.theFlowTitle || selectedTranscript.flowName}
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            View your recorded transcripts and AI responses
+          </p>
+        </div>
         <div className="space-y-4">
           <Button
             variant="ghost"
@@ -51,10 +61,6 @@ const Transcripts = () => {
             <ChevronLeft className="h-4 w-4" /> Back to List
           </Button>
           
-          <h2 className="text-2xl font-bold">
-            {selectedTranscript.response.theFlowTitle || selectedTranscript.flowName}
-          </h2>
-
           <Tabs defaultValue="transcript" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="transcript">Transcript</TabsTrigger>
@@ -62,7 +68,7 @@ const Transcripts = () => {
               <TabsTrigger value="response">AI Response</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="transcript" className="mt-4">
+            <TabsContent value="transcript" className="mt-2 sm:mt-4">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -85,7 +91,7 @@ const Transcripts = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="details" className="mt-4">
+            <TabsContent value="details" className="mt-2 sm:mt-4">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -110,7 +116,7 @@ const Transcripts = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="response" className="mt-4">
+            <TabsContent value="response" className="mt-2 sm:mt-4">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -140,53 +146,58 @@ const Transcripts = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Transcripts</CardTitle>
-          <CardDescription>
-            View your recorded transcripts and AI responses
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {transcripts.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                No transcripts available. Record something to see it here.
-              </p>
-            ) : (
-              <div className="grid gap-4">
-                {transcripts.map((transcript) => (
-                  <div
-                    key={transcript.id}
-                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => setSelectedTranscript(transcript)}
-                  >
-                    <div className="space-y-1">
-                      <h3 className="font-medium">
-                        {transcript.response.theFlowTitle || transcript.flowName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(transcript.timestamp).toLocaleString()}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteTranscript(transcript.id);
-                      }}
+    <div className="flex flex-col h-full px-1 py-0.5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
+        <div className="flex items-center">
+          <h2 className="text-2xl font-semibold">Transcripts</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          View your recorded transcripts and AI responses
+        </p>
+      </div>
+
+      <div className="pt-4">
+        <Card>
+          <div className="pt-4">
+            <CardContent>
+              {transcripts.length === 0 ? (
+                <div className="text-center text-muted-foreground">
+                  No transcripts available. Record something to see it here.
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {transcripts.map((transcript) => (
+                    <div
+                      key={transcript.id}
+                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => setSelectedTranscript(transcript)}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <div className="space-y-1">
+                        <h3 className="font-medium">
+                          {transcript.response.theFlowTitle || transcript.flowName}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(transcript.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTranscript(transcript.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };

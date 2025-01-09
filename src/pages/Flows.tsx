@@ -73,22 +73,26 @@ const Flows = () => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50/40 dark:bg-gray-800/40">
-      <FlowBoard
-        flows={flows}
-        onFlowSelect={setSelectedFlow}
-        onNewFlow={() => setIsOpen(true)}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        selectedFlow={selectedFlow}
-        isMobileView={isMobileView}
-      />
+      <div className="pt-4">
+        <FlowBoard
+          flows={flows}
+          onFlowSelect={setSelectedFlow}
+          onNewFlow={() => setIsOpen(true)}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          selectedFlow={selectedFlow}
+          isMobileView={isMobileView}
+        />
+      </div>
       
-      <FlowDialog
-        open={isOpen}
-        onOpenChange={handleDialogOpenChange}
-        onSubmit={onSubmit}
-        editingFlow={editingFlow ? flows.find(f => f.id === editingFlow) : undefined}
-      />
+      <div className="pt-4">
+        <FlowDialog
+          open={isOpen}
+          onOpenChange={handleDialogOpenChange}
+          onSubmit={onSubmit}
+          editingFlow={editingFlow ? flows.find(f => f.id === editingFlow) : undefined}
+        />
+      </div>
     </div>
   );
 };
