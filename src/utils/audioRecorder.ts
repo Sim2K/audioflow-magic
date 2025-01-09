@@ -11,21 +11,51 @@ export class AudioRecorder {
   private audioContext: AudioContext | null = null;
 
   private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
-    // Create audio context
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Create audio context with forced sample rate
+    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+      sampleRate: 16000,
+      latencyHint: 'interactive'
+    });
     
     // Create source from input stream
     const source = this.audioContext.createMediaStreamSource(stream);
     
-    // Create channel merger to force mono
-    const merger = this.audioContext.createChannelMerger(1);
-    
-    // Connect source to merger
-    source.connect(merger);
+    // Create script processor to manually control the audio data
+    const processor = this.audioContext.createScriptProcessor(2048, 2, 1);
     
     // Create destination
     const dest = this.audioContext.createMediaStreamDestination();
-    merger.connect(dest);
+    
+    // Process audio to ensure mono and correct sample rate
+    processor.onaudioprocess = (e) => {
+      const inputBuffer = e.inputBuffer;
+      const outputBuffer = e.outputBuffer;
+      
+      // Downsample if needed
+      const downsampleRatio = Math.floor(inputBuffer.sampleRate / 16000);
+      
+      for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+        const inputData = inputBuffer.getChannelData(0); // Always use first channel for mono
+        const outputData = outputBuffer.getChannelData(channel);
+        
+        // Average samples for downsampling
+        for (let i = 0; i < outputBuffer.length; i++) {
+          let sum = 0;
+          for (let j = 0; j < downsampleRatio; j++) {
+            sum += inputData[i * downsampleRatio + j] || 0;
+          }
+          outputData[i] = sum / downsampleRatio;
+        }
+      }
+    };
+    
+    // Connect the audio nodes
+    source.connect(processor);
+    processor.connect(dest);
+    
+    // Log actual settings
+    const track = dest.stream.getAudioTracks()[0];
+    console.log('Audio settings after processing:', track.getSettings());
     
     return dest.stream;
   }
@@ -49,19 +79,14 @@ export class AudioRecorder {
 
       // Force mono audio using Web Audio API
       const monoStream = await this.createMonoStream(initialStream);
-      
-      // Log actual audio settings after mono conversion
-      const track = monoStream.getAudioTracks()[0];
-      const settings = track.getSettings();
-      console.log('Audio settings after mono conversion:', settings);
-
       this.mediaStream = monoStream;
       this.recordingStartTime = Date.now();
       this.totalSize = 0;
 
+      // Use lower quality codec settings
       this.mediaRecorder = new MediaRecorder(monoStream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 32000
+        audioBitsPerSecond: 24000  // Reduced from 32000 to ensure smaller file size
       });
 
       this.audioChunks = [];
