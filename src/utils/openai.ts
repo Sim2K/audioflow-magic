@@ -79,7 +79,15 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
       transcriptParts = [result.text];
     }
 
-    const transcript = transcriptParts.join(' ');
+    // Clean and join transcript parts
+    const cleanTranscript = transcriptParts
+      .map(part => part?.trim() || '')
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const transcript = cleanTranscript;
 
     // Now convert to MP3 for download after transcription is complete
     const audioData = await audioBlob.arrayBuffer();

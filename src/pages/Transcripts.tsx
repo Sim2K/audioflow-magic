@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import JsonViewer from "@/components/JsonViewer";
+import { CopyButton } from "@/components/ui/copy-button";
 
 interface Transcript {
   id: string;
@@ -64,16 +65,21 @@ const Transcripts = () => {
             <TabsContent value="transcript" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Transcript</CardTitle>
-                  <CardDescription>
-                    The raw transcript from your audio recording
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Transcript</CardTitle>
+                      <CardDescription>
+                        The raw transcript from your audio recording
+                      </CardDescription>
+                    </div>
+                    <CopyButton text={selectedTranscript?.transcript || ''} label="Copy transcript" />
+                  </div>
                 </CardHeader>
                 <CardContent className="relative">
                   <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent pr-2">
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                    <div className="text-sm text-muted-foreground whitespace-pre-line break-words">
                       {selectedTranscript.transcript}
-                    </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -82,10 +88,21 @@ const Transcripts = () => {
             <TabsContent value="details" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Details</CardTitle>
-                  <CardDescription>
-                    A user-friendly view of the AI-processed response
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Details</CardTitle>
+                      <CardDescription>
+                        Recording details and metadata
+                      </CardDescription>
+                    </div>
+                    <CopyButton 
+                      text={selectedTranscript ? 
+                        `Flow: ${selectedTranscript.flowName}\nCreated: ${new Date(selectedTranscript.timestamp).toLocaleString()}` 
+                        : ''
+                      } 
+                      label="Copy details" 
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <JsonViewer data={selectedTranscript.response} />
@@ -96,10 +113,18 @@ const Transcripts = () => {
             <TabsContent value="response" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>AI Response</CardTitle>
-                  <CardDescription>
-                    The complete AI-processed response in JSON format
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>AI Response</CardTitle>
+                      <CardDescription>
+                        AI-processed response based on your selected flow
+                      </CardDescription>
+                    </div>
+                    <CopyButton 
+                      text={selectedTranscript?.response ? JSON.stringify(selectedTranscript.response, null, 2) : ''} 
+                      label="Copy AI response" 
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <pre className="text-sm text-muted-foreground whitespace-pre-wrap overflow-x-auto">
