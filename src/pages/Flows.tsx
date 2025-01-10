@@ -4,12 +4,16 @@ import { Flow } from "@/utils/storage";
 import { getFlows, saveFlow, deleteFlow } from "@/utils/flowManager";
 import { FlowDialog } from "@/components/flows/FlowDialog";
 import { FlowBoard } from "@/components/flows/FlowBoard";
+import { APIConnectButton } from "@/modules/api-connect/components/APIConnectButton";
+import { APIConnectForm } from "@/modules/api-connect/components/APIConnectForm";
+import { APIConnection } from "@/modules/api-connect/types/api-connect";
 
 const Flows = () => {
   const [flows, setFlows] = useState<Flow[]>(getFlows());
   const [editingFlow, setEditingFlow] = useState<string | undefined>();
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isAPIConnectOpen, setIsAPIConnectOpen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const { toast } = useToast();
 
@@ -71,6 +75,11 @@ const Flows = () => {
     }
   };
 
+  const handleAPIConnect = (flow: Flow) => {
+    setSelectedFlow(flow);
+    setIsAPIConnectOpen(true);
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50/40 dark:bg-gray-800/40">
       <div className="pt-4">
@@ -80,19 +89,29 @@ const Flows = () => {
           onNewFlow={() => setIsOpen(true)}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onAPIConnect={handleAPIConnect}
           selectedFlow={selectedFlow}
           isMobileView={isMobileView}
         />
       </div>
-      
-      <div className="pt-4">
-        <FlowDialog
-          open={isOpen}
-          onOpenChange={handleDialogOpenChange}
-          onSubmit={onSubmit}
-          editingFlow={editingFlow ? flows.find(f => f.id === editingFlow) : undefined}
+
+      <FlowDialog
+        open={isOpen}
+        onOpenChange={handleDialogOpenChange}
+        onSubmit={onSubmit}
+        editingFlow={editingFlow ? flows.find(f => f.id === editingFlow) : undefined}
+      />
+
+      {selectedFlow && (
+        <APIConnectForm
+          flow={selectedFlow}
+          isOpen={isAPIConnectOpen}
+          onClose={() => {
+            setIsAPIConnectOpen(false);
+            setSelectedFlow(null);
+          }}
         />
-      </div>
+      )}
     </div>
   );
 };

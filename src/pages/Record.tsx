@@ -20,6 +20,8 @@ import { ProcessingDialog } from "@/components/ProcessingDialog";
 import { AudioVisualizer } from "@/components/recorder/AudioVisualizer";
 import { RecordingTimer } from "@/components/recorder/RecordingTimer";
 import { CopyButton } from "@/components/ui/copy-button";
+import { useAPIForward } from "@/modules/api-connect/hooks/useAPIForward";
+import { APIResponseCard } from "@/modules/api-connect/components/APIResponseCard";
 
 const audioRecorder = new AudioRecorder();
 
@@ -34,6 +36,7 @@ const Index = () => {
   const [audioInfo, setAudioInfo] = useState<{ size: string; duration: string } | null>(null);
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
   const { toast } = useToast();
+  const { apiResult, isForwarding, forwardResponse } = useAPIForward();
 
   useEffect(() => {
     setFlows(getFlows());
@@ -43,12 +46,12 @@ const Index = () => {
     if (!selectedFlow) return;
 
     try {
-      // Call Whisper API to transcribe the audio and process with GPT-4
       const { transcript, processedResponse } = await transcribeAudio(audioBlob, selectedFlow);
       setTranscript(transcript);
-
-      // Use the processed response directly
       setResponse(processedResponse);
+
+      // Forward to external API if connection exists
+      const forwardResult = await forwardResponse(selectedFlow, processedResponse);
 
       // Save to localStorage for transcript history
       let transcriptHistory;
@@ -60,6 +63,7 @@ const Index = () => {
         console.error('Error parsing transcript history:', error);
         transcriptHistory = [];
       }
+
       transcriptHistory.push({
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
@@ -67,27 +71,34 @@ const Index = () => {
         flowName: selectedFlow.name,
         transcript,
         response: processedResponse,
-        audioUrl: audioUrl // Save the audio URL with the transcript
+        audioUrl: audioUrl,
+        apiForwardResult: forwardResult // Save the actual API forward result
       });
+
       try {
         localStorage.setItem("transcripts", JSON.stringify(transcriptHistory));
       } catch (error) {
         console.error('Error saving transcript history:', error);
+        toast({
+          title: "Warning",
+          description: "Could not save transcript to history.",
+          variant: "destructive",
+        });
       }
 
-      setIsProcessing(false);
       toast({
         title: "Processing completed",
         description: "Your recording has been processed successfully.",
       });
     } catch (error) {
-      setIsProcessing(false);
       console.error("Error processing recording:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process the recording.",
+        description: error instanceof Error ? error.message : "Failed to process recording.",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -166,7 +177,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col h-full px-1 py-0.5">
-      <ProcessingDialog open={isProcessing} />
+      <ProcessingDialog open={isProcessing || isForwarding} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
         <div className="flex items-center">
           <h2 className="text-2xl font-semibold">Record Audio</h2>
@@ -316,6 +327,7 @@ const Index = () => {
                   </Card>
                 </TabsContent>
                 <TabsContent value="airesponse" className="space-y-4">
+                  {apiResult && <APIResponseCard result={apiResult} />}
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">

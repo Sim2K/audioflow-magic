@@ -11,6 +11,7 @@ import { ChevronLeft, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import JsonViewer from "@/components/JsonViewer";
 import { CopyButton } from "@/components/ui/copy-button";
+import { APIResponseCard } from "@/modules/api-connect/components/APIResponseCard";
 
 interface Transcript {
   id: string;
@@ -19,6 +20,8 @@ interface Transcript {
   flowName: string;
   transcript: string;
   response: any;
+  audioUrl?: string;
+  apiForwardResult: any;
 }
 
 const Transcripts = () => {
@@ -39,107 +42,131 @@ const Transcripts = () => {
     }
   };
 
+  // Helper function to get display title
+  const getTranscriptTitle = (transcript: Transcript) => {
+    return transcript.response?.theFlowTitle || 
+           transcript.flowName || 
+           new Date(transcript.timestamp).toLocaleString();
+  };
+
   if (selectedTranscript) {
     return (
       <div className="flex flex-col h-full px-1 py-0.5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
           <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedTranscript(null)}
+              className="mr-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
             <h2 className="text-2xl font-semibold">
-              {selectedTranscript.response.theFlowTitle || selectedTranscript.flowName}
+              {getTranscriptTitle(selectedTranscript)}
             </h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            View your recorded transcripts and AI responses
+            {new Date(selectedTranscript.timestamp).toLocaleString()}
           </p>
         </div>
-        <div className="space-y-4">
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedTranscript(null)}
-            className="flex items-center gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" /> Back to List
-          </Button>
-          
-          <Tabs defaultValue="transcript" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="transcript">Transcript</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="response">AI Response</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="transcript" className="mt-2 sm:mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Transcript</CardTitle>
-                      <CardDescription>
-                        The raw transcript from your audio recording
-                      </CardDescription>
-                    </div>
-                    <CopyButton text={selectedTranscript?.transcript || ''} label="Copy transcript" />
-                  </div>
-                </CardHeader>
-                <CardContent className="relative">
-                  <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent pr-2">
-                    <div className="text-sm text-muted-foreground whitespace-pre-line break-words">
-                      {selectedTranscript.transcript}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
-            <TabsContent value="details" className="mt-2 sm:mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Details</CardTitle>
-                      <CardDescription>
-                        Recording details and metadata
-                      </CardDescription>
-                    </div>
-                    <CopyButton 
-                      text={selectedTranscript ? 
-                        `Flow: ${selectedTranscript.flowName}\nCreated: ${new Date(selectedTranscript.timestamp).toLocaleString()}` 
-                        : ''
-                      } 
-                      label="Copy details" 
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <JsonViewer data={selectedTranscript.response} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="response" className="mt-2 sm:mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>AI Response</CardTitle>
-                      <CardDescription>
-                        AI-processed response based on your selected flow
-                      </CardDescription>
-                    </div>
-                    <CopyButton 
-                      text={selectedTranscript?.response ? JSON.stringify(selectedTranscript.response, null, 2) : ''} 
-                      label="Copy AI response" 
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap overflow-x-auto">
-                    {JSON.stringify(selectedTranscript.response, null, 2)}
-                  </pre>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+        <div className="pt-4">
+          <Card>
+            <div className="pt-4">
+              <CardContent>
+                <Tabs defaultValue="transcript" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="transcript">Transcript</TabsTrigger>
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="airesponse">AI Response</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="transcript" className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle>Transcript</CardTitle>
+                            <CardDescription>
+                              The raw transcript from your audio recording
+                            </CardDescription>
+                          </div>
+                          <CopyButton text={selectedTranscript.transcript || ''} label="Copy transcript" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="relative">
+                        <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent pr-2">
+                          <div className="text-sm text-muted-foreground whitespace-pre-line break-words">
+                            {selectedTranscript.transcript || "No transcript available"}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="details" className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle>Details</CardTitle>
+                            <CardDescription>
+                              Recording details and metadata
+                            </CardDescription>
+                          </div>
+                          <CopyButton 
+                            text={`Flow: ${selectedTranscript.flowName}\nCreated: ${new Date(selectedTranscript.timestamp).toLocaleString()}`} 
+                            label="Copy details" 
+                          />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {selectedTranscript.response ? (
+                          <JsonViewer data={selectedTranscript.response} />
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No processed response available
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="airesponse" className="space-y-4">
+                    {selectedTranscript.apiForwardResult ? (
+                      <APIResponseCard result={selectedTranscript.apiForwardResult} />
+                    ) : (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>API Forward Response</CardTitle>
+                          <CardDescription>No API forward response available</CardDescription>
+                        </CardHeader>
+                      </Card>
+                    )}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle>AI Response</CardTitle>
+                            <CardDescription>
+                              AI-processed response based on your selected flow
+                            </CardDescription>
+                          </div>
+                          <CopyButton 
+                            text={selectedTranscript.response ? JSON.stringify(selectedTranscript.response, null, 2) : ''} 
+                            label="Copy AI response" 
+                          />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {selectedTranscript.response ? JSON.stringify(selectedTranscript.response, null, 2) : "No response available"}
+                        </pre>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </div>
+          </Card>
         </div>
       </div>
     );
@@ -152,50 +179,53 @@ const Transcripts = () => {
           <h2 className="text-2xl font-semibold">Transcripts</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          View your recorded transcripts and AI responses
+          View your transcript history
         </p>
       </div>
 
       <div className="pt-4">
         <Card>
-          <div className="pt-4">
-            <CardContent>
-              {transcripts.length === 0 ? (
-                <div className="text-center text-muted-foreground">
-                  No transcripts available. Record something to see it here.
+          <CardHeader>
+            <CardTitle>Transcript History</CardTitle>
+            <CardDescription>
+              Select a transcript to view details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {transcripts.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-accent cursor-pointer"
+                  onClick={() => setSelectedTranscript(t)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium truncate">
+                      {getTranscriptTitle(t)}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(t.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteTranscript(t.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              ) : (
-                <div className="grid gap-4">
-                  {transcripts.map((transcript) => (
-                    <div
-                      key={transcript.id}
-                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => setSelectedTranscript(transcript)}
-                    >
-                      <div className="space-y-1">
-                        <h3 className="font-medium">
-                          {transcript.response.theFlowTitle || transcript.flowName}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(transcript.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteTranscript(transcript.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+              ))}
+              {transcripts.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No transcripts available
+                </p>
               )}
-            </CardContent>
-          </div>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>

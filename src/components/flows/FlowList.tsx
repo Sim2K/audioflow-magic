@@ -29,43 +29,38 @@ export function FlowList({
                 <div
                   key={flow.id}
                   className={cn(
-                    "group p-3 rounded-lg border bg-white cursor-pointer transition-colors",
-                    "hover:border-primary/20 hover:bg-primary/5",
-                    selectedFlow?.id === flow.id && "border-primary/30 bg-primary/10"
+                    "flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors",
+                    selectedFlow?.id === flow.id && "bg-accent"
                   )}
                   onClick={() => onFlowSelect(flow)}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-medium text-sm truncate">{flow.name}</h3>
-                      <p className="text-xs text-muted-foreground truncate mt-1">
-                        {flow.endpoint}
-                      </p>
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit(flow);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(flow.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium truncate">{flow.name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {flow.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(flow);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(flow.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}

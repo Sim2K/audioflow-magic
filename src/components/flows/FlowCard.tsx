@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Link2 } from "lucide-react";
 import { Flow } from "@/utils/storage";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +15,11 @@ interface FlowCardProps {
   flow: Flow;
   onEdit: (flow: Flow) => void;
   onDelete: (id: string) => void;
+  onAPIConnect?: (flow: Flow) => void;
   detailed?: boolean;
 }
 
-export function FlowCard({ flow, onEdit, onDelete, detailed = false }: FlowCardProps) {
+export function FlowCard({ flow, onEdit, onDelete, onAPIConnect, detailed = false }: FlowCardProps) {
   return (
     <Card className={cn("h-full flex flex-col", detailed ? "shadow-none border-0" : "")}>
       <CardHeader className="flex-none">
@@ -30,6 +31,16 @@ export function FlowCard({ flow, onEdit, onDelete, detailed = false }: FlowCardP
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            {onAPIConnect && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => onAPIConnect(flow)}
+                className="h-9 w-9 sm:h-8 sm:w-8"
+              >
+                <Link2 className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="outline"
               size="icon"
