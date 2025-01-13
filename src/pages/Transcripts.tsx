@@ -89,11 +89,11 @@ const Transcripts = () => {
                   {transcripts.map((t) => (
                     <div
                       key={t.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-accent cursor-pointer"
+                      className="flex items-center gap-2 p-3 rounded-lg hover:bg-accent cursor-pointer"
                       onClick={() => setSelectedTranscript(t)}
                     >
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium truncate">
+                      <div className="flex-1 min-w-0 mr-2">
+                        <h3 className="text-sm font-medium break-words md:truncate">
                           {getTranscriptTitle(t)}
                         </h3>
                         <p className="text-xs text-muted-foreground">
@@ -103,6 +103,7 @@ const Transcripts = () => {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="flex-shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteTranscript(t.id);
@@ -127,23 +128,23 @@ const Transcripts = () => {
               "md:flex-1",
               isMobileView && !selectedTranscript ? "hidden" : "block"
             )}>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b mb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 px-2 py-1 border-b mb-4">
                 {isMobileView && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setSelectedTranscript(null)}
-                    className="mr-2"
+                    className="flex-shrink-0 mr-2"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                 )}
-                <div className="flex items-center">
-                  <h2 className="text-2xl font-semibold">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-2xl font-semibold break-words">
                     {getTranscriptTitle(selectedTranscript)}
                   </h2>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground flex-shrink-0">
                   {new Date(selectedTranscript.timestamp).toLocaleString()}
                 </p>
               </div>

@@ -28,18 +28,18 @@ export function FlowList({
               <div
                 key={flow.id}
                 className={cn(
-                  "flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors",
+                  "flex items-center gap-2 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors",
                   selectedFlow?.id === flow.id && "bg-accent"
                 )}
                 onClick={() => onFlowSelect(flow)}
               >
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium truncate">{flow.name}</h3>
-                  <p className="text-xs text-muted-foreground truncate">
+                <div className="flex-1 min-w-0 mr-2">
+                  <h3 className="text-sm font-medium break-words md:truncate">{flow.name}</h3>
+                  <p className="text-xs text-muted-foreground break-words md:truncate">
                     {flow.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
