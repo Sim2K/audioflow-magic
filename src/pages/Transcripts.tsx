@@ -77,14 +77,14 @@ const Transcripts = () => {
             isMobileView && selectedTranscript ? "hidden" : "block",
             "md:block md:w-1/3"
           )}>
-            <Card>
+            <Card className="h-[calc(100vh-8rem)]">
               <CardHeader>
                 <CardTitle>Transcript History</CardTitle>
                 <CardDescription>
                   Select a transcript to view details
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="h-[calc(100%-5rem)] overflow-y-auto">
                 <div className="space-y-2">
                   {transcripts.map((t) => (
                     <div
