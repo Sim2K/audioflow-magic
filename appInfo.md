@@ -152,6 +152,51 @@ src/
    - MP3 conversion optimization
    ```
 
+### Component Updates
+
+#### JsonViewer Component
+- **Location**: `src/components/JsonViewer.tsx`
+- **Purpose**: Renders JSON data with interactive features for better data exploration
+- **Dependencies**:
+  - Uses `lucide-react` for icons (Copy, Check, ChevronDown, ChevronUp)
+  - Integrates with existing Tailwind CSS theme
+- **Features**:
+  1. Expand/Collapse Controls
+     - Starts fully expanded by default
+     - Global expand/collapse all buttons
+     - Individual toggle buttons for each object/array
+     - ChevronUp/Down icons for better visual feedback
+     - Collapse shows root level structure
+  2. Copy Functionality
+     - Copy button appears on hover
+     - Copies individual values or entire objects
+     - Visual feedback with checkmark icon
+     - Supports copying full JSON paths
+  
+  3. Search and Highlight
+     - Case-insensitive search
+     - Highlights matching text
+     - Auto-expands paths to matches
+     - Supports searching in keys and values
+  
+  4. Lazy Loading
+     - Loads large datasets in chunks
+     - Configurable items per page (default: 50)
+     - "Load more" button with remaining count
+     - Separate counters for arrays and objects
+
+- **Props**:
+  - `data`: Any JSON-serializable data
+  - `level`: Nesting level (default: 0)
+  - `initialExpandLevel`: Initial expansion depth (default: 1)
+  - `searchTerm`: Text to search and highlight
+  - `itemsPerPage`: Number of items to show per page (default: 50)
+
+- **Integration**:
+  - Used in Transcripts page for API response visualization
+  - Maintains existing special styling for 'title' and 'summary' fields
+  - Preserves dark mode compatibility
+
 ### State Management
 1. **Local Storage**
    ```typescript

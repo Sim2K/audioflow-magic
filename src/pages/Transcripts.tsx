@@ -120,8 +120,10 @@ const Transcripts = () => {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {selectedTranscript.response ? (
-                          <JsonViewer data={selectedTranscript.response} />
+                        {selectedTranscript?.response ? (
+                          <JsonViewer 
+                            data={selectedTranscript.response}
+                          />
                         ) : (
                           <p className="text-sm text-muted-foreground">
                             No processed response available
