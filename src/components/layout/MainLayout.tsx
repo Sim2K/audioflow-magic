@@ -32,14 +32,20 @@ function Header() {
 }
 
 function Layout({ children }: { children: React.ReactNode }) {
-  const { isMobile } = useSidebar();
+  const { isMobile, isCollapsed } = useSidebar();
   
   return (
     <div className="min-h-screen flex w-full bg-background">
       <AppSidebar />
-      <div className="flex-1 relative">
+      <div className={cn(
+        "flex-1 flex flex-col min-h-screen",
+        !isMobile && (isCollapsed ? "ml-[70px]" : "ml-[240px]")
+      )}>
         <Header />
-        <main className={cn("p-6", isMobile && "mt-14")}>
+        <main className={cn(
+          "flex-1 overflow-y-auto",
+          isMobile ? "pt-20 px-4" : "p-6"
+        )}>
           <div className="container mx-auto">
             {children}
           </div>

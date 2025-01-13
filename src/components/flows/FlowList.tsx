@@ -20,9 +20,9 @@ export function FlowList({
   selectedFlow,
 }: FlowListProps) {
   return (
-    <div className="h-[calc(100vh-8rem)] space-y-4">
+    <div className="h-[calc(100vh-16rem)] sticky top-6 space-y-4">
       <Card className="h-full">
-        <CardContent className="h-[calc(100%-1.5rem)] pt-6 overflow-y-auto">
+        <CardContent className="h-full pt-6 overflow-y-auto">
           <div className="space-y-3">
             {flows.map((flow) => (
               <div
@@ -36,7 +36,7 @@ export function FlowList({
                 <div className="flex-1 min-w-0 mr-2">
                   <h3 className="text-sm font-medium break-words md:truncate">{flow.name}</h3>
                   <p className="text-xs text-muted-foreground break-words md:truncate">
-                    {flow.description}
+                    {flow.endpoint}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
