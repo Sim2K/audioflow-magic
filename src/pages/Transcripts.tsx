@@ -61,37 +61,45 @@ const Transcripts = () => {
   };
 
   return (
-    <div className="flex flex-col h-full px-1 py-0.5">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 py-1 gap-2 border-b">
-        <div className="flex items-center">
-          <h2 className="text-2xl font-semibold">Transcripts</h2>
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
+      {/* Header - Sticky */}
+      <div className="sticky top-0 z-30 bg-background">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4">
+          <div className="flex items-center">
+            <h2 className="text-2xl font-semibold">Transcripts</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            View your transcript history
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          View your transcript history
-        </p>
       </div>
 
-      <div className="flex-1 pt-4">
-        <div className="flex flex-col md:flex-row md:gap-4 h-full">
-          <div className="flex-1">
-            <div className="flex flex-col md:flex-row md:gap-6">
-              <div className={cn(
-                "md:w-[400px]",
-                isMobileView && selectedTranscript ? "hidden" : "block"
-              )}>
-                <Card>
-                  <CardHeader className="sticky top-0 z-10 bg-background">
-                    <CardTitle>Transcript History</CardTitle>
-                    <CardDescription>
-                      Select a transcript to view details
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[calc(100vh-16rem)] overflow-y-auto">
-                    <div className="space-y-2">
+      {/* Content Area */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full flex">
+          {/* List Section - Fixed */}
+          <div className={cn(
+            isMobileView && selectedTranscript ? "hidden" : "block",
+            "md:block w-[400px]"
+          )}>
+            <div className="fixed w-[400px] top-[4rem] bottom-0 bg-background">
+              <Card className="h-full border-0">
+                <CardHeader className="bg-background">
+                  <CardTitle>Transcript History</CardTitle>
+                  <CardDescription>
+                    Select a transcript to view details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-y-auto h-[calc(100vh-12rem)]">
+                    <div className="space-y-2 p-6">
                       {transcripts.map((t) => (
                         <div
                           key={t.id}
-                          className="flex items-center gap-2 p-3 rounded-lg hover:bg-accent cursor-pointer"
+                          className={cn(
+                            "flex items-center gap-2 p-3 rounded-lg hover:bg-accent cursor-pointer",
+                            selectedTranscript?.id === t.id && "bg-accent"
+                          )}
                           onClick={() => setSelectedTranscript(t)}
                         >
                           <div className="flex-1 min-w-0 mr-2">
@@ -121,34 +129,41 @@ const Transcripts = () => {
                         </p>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          
+          {/* Details Section - Scrollable */}
+          <div className={cn(
+            "flex-1 min-h-0 overflow-y-auto",
+            isMobileView && !selectedTranscript ? "hidden" : "flex-1"
+          )}>
+            <div className="w-full px-6">
+              {selectedTranscript ? (
+                <>
+                  {isMobileView && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedTranscript(null)}
+                      className="flex items-center -ml-2 text-muted-foreground mb-4"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-2" />
+                      Back to Transcripts
+                    </Button>
+                  )}
 
-              {selectedTranscript && (
-                <div className={cn(
-                  "md:flex-1",
-                  isMobileView && !selectedTranscript ? "hidden" : "block"
-                )}>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 px-2 py-1 border-b mb-4">
-                    {isMobileView && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedTranscript(null)}
-                        className="flex-shrink-0 mr-2"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-2xl font-semibold break-words">
+                  <div className="flex flex-col gap-4 mb-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-semibold break-words">
                         {getTranscriptTitle(selectedTranscript)}
                       </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(selectedTranscript.timestamp).toLocaleString()}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground flex-shrink-0">
-                      {new Date(selectedTranscript.timestamp).toLocaleString()}
-                    </p>
                   </div>
 
                   <Card>
@@ -160,6 +175,7 @@ const Transcripts = () => {
                             <TabsTrigger value="details">Details</TabsTrigger>
                             <TabsTrigger value="airesponse">AI Response</TabsTrigger>
                           </TabsList>
+
                           <TabsContent value="transcript" className="space-y-4">
                             <Card>
                               <CardHeader>
@@ -182,6 +198,7 @@ const Transcripts = () => {
                               </CardContent>
                             </Card>
                           </TabsContent>
+
                           <TabsContent value="details" className="space-y-4">
                             <Card>
                               <CardHeader>
@@ -211,6 +228,7 @@ const Transcripts = () => {
                               </CardContent>
                             </Card>
                           </TabsContent>
+
                           <TabsContent value="airesponse" className="space-y-4">
                             {selectedTranscript.apiForwardResult ? (
                               <APIResponseCard result={selectedTranscript.apiForwardResult} />
@@ -248,6 +266,13 @@ const Transcripts = () => {
                       </CardContent>
                     </div>
                   </Card>
+                </>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <h2 className="text-2xl font-semibold text-muted-foreground mb-2">No Transcript Selected</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Select a transcript from the list to view its details
+                  </p>
                 </div>
               )}
             </div>
