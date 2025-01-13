@@ -232,7 +232,7 @@ const JsonViewer: React.FC<JsonViewerProps> = ({
               {renderCopyButton(value, path)}
             </div>
             {shouldShowChildren && hasChildren && (
-              <ul className="list-disc pl-6 space-y-2 py-2">
+              <ul className="list-disc pl-8 space-y-2 py-2">
                 {renderLazyList(value, path)}
               </ul>
             )}
@@ -241,7 +241,7 @@ const JsonViewer: React.FC<JsonViewerProps> = ({
       }
 
       return (
-        <div className={cn("space-y-4", level > 0 && "pl-4 border-l-2 border-muted")}>
+        <div className={cn("space-y-4", level > 0 && "pl-8 border-l-2 border-muted")}>
           <div className="group">
             <div className="flex items-center">
               {hasChildren && (
