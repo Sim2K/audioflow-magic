@@ -81,8 +81,8 @@ const Flows = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50/40 dark:bg-gray-800/40">
-      <div className="pt-4">
+    <div className="h-full flex flex-col">
+      <div className="flex-1">
         <FlowBoard
           flows={flows}
           onFlowSelect={setSelectedFlow}

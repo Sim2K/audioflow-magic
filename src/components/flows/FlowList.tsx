@@ -2,7 +2,7 @@ import { Flow } from "@/utils/storage";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 interface FlowListProps {
   flows: Flow[];
@@ -20,10 +20,14 @@ export function FlowList({
   selectedFlow,
 }: FlowListProps) {
   return (
-    <div className="h-[calc(100vh-16rem)] sticky top-6 space-y-4">
-      <Card className="h-full">
-        <CardContent className="h-full pt-6 overflow-y-auto">
-          <div className="space-y-3">
+    <Card className="h-full border-0">
+      <CardHeader className="bg-background pt-0">
+        <CardTitle>Flow List</CardTitle>
+        <CardDescription>Select a flow to view details</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-y-auto h-[calc(100vh-12rem)]">
+          <div className="space-y-2 p-6">
             {flows.map((flow) => (
               <div
                 key={flow.id}
@@ -64,8 +68,8 @@ export function FlowList({
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
