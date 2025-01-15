@@ -19,7 +19,7 @@ export const formatConfigs = {
     codec: 'aac',
     extension: 'm4a',
     bitrate: 32000,
-    sampleRate: 16000
+    sampleRate: 22050  // Optimized for speech
   }
 } as const;
 

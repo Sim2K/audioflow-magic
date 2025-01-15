@@ -27,53 +27,52 @@ export class AudioRecorder {
   }
 
   private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
-    // Create audio context with forced sample rate
+    // Create audio context with format-specific sample rate
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
       sampleRate: this.recorderConfig.config.sampleRate,
       latencyHint: 'interactive'
     });
     
-    // Create source from input stream
     const source = this.audioContext.createMediaStreamSource(stream);
-    
-    // Create script processor to manually control the audio data
-    const processor = this.audioContext.createScriptProcessor(2048, 2, 1);
-    
-    // Create destination
-    const dest = this.audioContext.createMediaStreamDestination();
-    
-    // Process audio to ensure mono and correct sample rate
-    processor.onaudioprocess = (e) => {
-      const inputBuffer = e.inputBuffer;
-      const outputBuffer = e.outputBuffer;
+    const destination = this.audioContext.createMediaStreamDestination();
+
+    // For iOS, we'll use a simpler approach to ensure compatibility
+    if (this.recorderConfig.format === 'mp4') {
+      // Simple mono downmix for iOS/MP4
+      const monoMixer = this.audioContext.createChannelMerger(1);
+      source.connect(monoMixer);
+      monoMixer.connect(destination);
+    } else {
+      // More detailed processing for WebM
+      const processor = this.audioContext.createScriptProcessor(2048, 2, 1);
       
-      // Downsample if needed
-      const downsampleRatio = Math.floor(inputBuffer.sampleRate / this.recorderConfig.config.sampleRate);
-      
-      for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
-        const inputData = inputBuffer.getChannelData(0); // Always use first channel for mono
-        const outputData = outputBuffer.getChannelData(channel);
+      processor.onaudioprocess = (e) => {
+        const inputBuffer = e.inputBuffer;
+        const outputBuffer = e.outputBuffer;
         
-        // Average samples for downsampling
-        for (let i = 0; i < outputBuffer.length; i++) {
-          let sum = 0;
-          for (let j = 0; j < downsampleRatio; j++) {
-            sum += inputData[i * downsampleRatio + j] || 0;
-          }
-          outputData[i] = sum / downsampleRatio;
+        // Get the mono channel data
+        const inputData = inputBuffer.getChannelData(0);
+        const outputData = outputBuffer.getChannelData(0);
+        
+        // Simple copy for mono
+        for (let i = 0; i < inputBuffer.length; i++) {
+          outputData[i] = inputData[i];
         }
-      }
-    };
+      };
+      
+      source.connect(processor);
+      processor.connect(destination);
+    }
     
-    // Connect the audio nodes
-    source.connect(processor);
-    processor.connect(dest);
+    const track = destination.stream.getAudioTracks()[0];
+    console.log('Audio configuration:', {
+      format: this.recorderConfig.format,
+      sampleRate: this.recorderConfig.config.sampleRate,
+      bitrate: this.recorderConfig.config.bitrate,
+      actualSettings: track.getSettings()
+    });
     
-    // Log actual settings
-    const track = dest.stream.getAudioTracks()[0];
-    console.log('Audio settings after processing:', track.getSettings());
-    
-    return dest.stream;
+    return destination.stream;
   }
 
   async startRecording(): Promise<void> {
@@ -82,7 +81,8 @@ export class AudioRecorder {
         return;
       }
 
-      console.log('Requesting media stream...');
+      console.log('Starting recording with format:', this.recorderConfig.format);
+      
       const initialStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
@@ -93,15 +93,14 @@ export class AudioRecorder {
         } 
       });
 
-      // Force mono audio using Web Audio API
       const monoStream = await this.createMonoStream(initialStream);
       this.mediaStream = monoStream;
       this.recordingStartTime = Date.now();
       this.totalSize = 0;
 
       const mimeType = `${this.recorderConfig.config.mimeType};codecs=${this.recorderConfig.config.codec}`;
+      console.log('Using MIME type:', mimeType);
       
-      // Use format-specific codec settings
       this.mediaRecorder = new MediaRecorder(monoStream, {
         mimeType,
         audioBitsPerSecond: this.recorderConfig.config.bitrate
