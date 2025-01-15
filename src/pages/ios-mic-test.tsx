@@ -24,6 +24,24 @@ const iOSMicTest = () => {
     `);
   }, []);
 
+  const getSupportedMimeType = () => {
+    const types = [
+      'audio/webm',
+      'audio/mp4',
+      'audio/aac',
+      'audio/wav',
+      'audio/ogg'
+    ];
+    
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('Supported type:', type);
+        return type;
+      }
+    }
+    return null;
+  };
+
   const startRecording = async () => {
     try {
       setError(null);
@@ -39,8 +57,15 @@ const iOSMicTest = () => {
       console.log("Audio track constraints:", audioTrack.getConstraints());
       
       streamRef.current = stream;
+
+      const mimeType = getSupportedMimeType();
+      if (!mimeType) {
+        throw new Error("No supported audio MIME types found");
+      }
+
+      console.log("Using MIME type:", mimeType);
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: mimeType
       });
       
       console.log("MediaRecorder created:", mediaRecorder);
@@ -55,7 +80,7 @@ const iOSMicTest = () => {
 
       mediaRecorder.onstop = () => {
         console.log("Recording stopped");
-        const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
         setAudioURL(url);
         recordedChunksRef.current = [];
@@ -83,7 +108,6 @@ const iOSMicTest = () => {
   const testWithDifferentConstraints = async () => {
     const testConstraints = [
       { audio: true },
-      { audio: { echoCancellation: false } },
       { audio: { 
           echoCancellation: false,
           noiseSuppression: false,
@@ -92,10 +116,25 @@ const iOSMicTest = () => {
       { audio: {
           channelCount: 1,
           sampleRate: 44100
+      }},
+      { audio: {
+          channelCount: 1,
+          sampleRate: 44100,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
       }}
     ];
 
-    setConstraints(testConstraints[0]);
+    // Get the next constraints in the cycle
+    const currentIndex = testConstraints.findIndex(
+      c => JSON.stringify(c) === JSON.stringify(constraints)
+    );
+    const nextIndex = (currentIndex + 1) % testConstraints.length;
+    const newConstraints = testConstraints[nextIndex];
+    
+    console.log("Switching to constraints:", newConstraints);
+    setConstraints(newConstraints);
   };
 
   return (
