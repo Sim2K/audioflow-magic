@@ -46,25 +46,26 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
       type: audioBlob.type
     });
 
-    const MAX_CHUNK_SIZE = 24 * 1024 * 1024; // 24MB
-    let transcriptParts: string[] = [];
-    
-    const format = audioBlob.type.includes('mp4') || audioBlob.type.includes('aac') ? 'mp4' : 'webm';
-    console.log('Detected format:', format);
-
     // Create FormData
     const formData = new FormData();
-    const extension = format === 'mp4' ? 'm4a' : 'webm';
-    formData.append('file', audioBlob, `audio.${extension}`);
+    
+    // Convert to mp3 format for better compatibility
+    const audioData = await audioBlob.arrayBuffer();
+    const audioContext = new AudioContext();
+    const audioBuffer = await audioContext.decodeAudioData(audioData);
+    const mp3Blob = await convertToMp3(audioBuffer);
+    
+    console.log('Converted audio to MP3:', {
+      originalSize: audioBlob.size,
+      mp3Size: mp3Blob.size,
+      mp3Type: mp3Blob.type
+    });
+
+    formData.append('file', mp3Blob, 'audio.mp3');
     formData.append('model', 'whisper-1');
     formData.append('language', 'en');
 
-    console.log('Sending request to OpenAI with:', {
-      format,
-      extension,
-      contentType: audioBlob.type,
-      size: audioBlob.size
-    });
+    console.log('Sending request to OpenAI');
 
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -85,13 +86,7 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     }
 
     const result: WhisperResponse = await response.json();
-    transcriptParts = [result.text];
-
-    // Clean and join transcript parts
-    const cleanTranscript = transcriptParts
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const cleanTranscript = result.text.trim();
 
     // Process the response based on the flow
     const processedResponse = await processTranscriptionResponse(cleanTranscript, flow);
@@ -166,14 +161,12 @@ function writeString(view: DataView, offset: number, string: string) {
 }
 
 async function processTranscriptionResponse(transcript: string, flow: Flow): Promise<any> {
-  // Now convert to MP3 for download after transcription is complete
-  const audioData = await audioBlob.arrayBuffer();
-  const audioContext = new AudioContext();
-  const audioBuffer = await audioContext.decodeAudioData(audioData);
-  const mp3Blob = await convertToMp3(audioBuffer);
+  const apiKey = localStorage.getItem(StorageKeys.OPENAI_API_KEY);
+  if (!apiKey) {
+    throw new Error('OpenAI API key not found');
+  }
 
   // Process with GPT-4
-  const endpoint = flow.endpoint || DEFAULT_COMPLETION_ENDPOINT;
   const completionResponse = await fetch(`https://api.openai.com/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -226,7 +219,5 @@ ${flow.format}`,
   }
 
   const completionData = await completionResponse.json();
-  const processedResponse = JSON.parse(completionData.choices[0].message.content);
-
-  return processedResponse;
+  return JSON.parse(completionData.choices[0].message.content);
 }
