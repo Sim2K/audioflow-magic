@@ -35,7 +35,11 @@ const iOSMicTest = () => {
       Is iOS: ${isIOS}
       Vendor: ${navigator.vendor}
       
-      Supported Format: audio/mp4
+      Recording Format: audio/mp4
+      Default Settings:
+      - Bit Rate: 32 kbps
+      - Sample Rate: 22.05 kHz
+      - Channels: Mono
     `);
   }, []);
 
@@ -81,7 +85,6 @@ const iOSMicTest = () => {
         audio: {
           channelCount: channels,
           sampleRate: sampleRate,
-          // Note: Some of these might be ignored by iOS
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true

@@ -13,39 +13,32 @@ export class AudioRecorder {
   private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
     // Create audio context with forced sample rate
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: 16000,
+      sampleRate: 22050, // Optimized for speech
       latencyHint: 'interactive'
     });
     
     // Create source from input stream
     const source = this.audioContext.createMediaStreamSource(stream);
     
-    // Create script processor to manually control the audio data
+    // Create script processor for mono conversion
     const processor = this.audioContext.createScriptProcessor(2048, 2, 1);
     
     // Create destination
     const dest = this.audioContext.createMediaStreamDestination();
     
-    // Process audio to ensure mono and correct sample rate
+    // Process audio to ensure mono
     processor.onaudioprocess = (e) => {
       const inputBuffer = e.inputBuffer;
       const outputBuffer = e.outputBuffer;
       
-      // Downsample if needed
-      const downsampleRatio = Math.floor(inputBuffer.sampleRate / 16000);
-      
-      for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
-        const inputData = inputBuffer.getChannelData(0); // Always use first channel for mono
-        const outputData = outputBuffer.getChannelData(channel);
-        
-        // Average samples for downsampling
-        for (let i = 0; i < outputBuffer.length; i++) {
-          let sum = 0;
-          for (let j = 0; j < downsampleRatio; j++) {
-            sum += inputData[i * downsampleRatio + j] || 0;
-          }
-          outputData[i] = sum / downsampleRatio;
+      // Convert to mono by averaging channels
+      const outputData = outputBuffer.getChannelData(0);
+      for (let i = 0; i < outputBuffer.length; i++) {
+        let sum = 0;
+        for (let channel = 0; channel < inputBuffer.numberOfChannels; channel++) {
+          sum += inputBuffer.getChannelData(channel)[i];
         }
+        outputData[i] = sum / inputBuffer.numberOfChannels;
       }
     };
     
@@ -70,7 +63,7 @@ export class AudioRecorder {
       const initialStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
-          sampleRate: 16000,
+          sampleRate: 22050,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -83,10 +76,10 @@ export class AudioRecorder {
       this.recordingStartTime = Date.now();
       this.totalSize = 0;
 
-      // Use lower quality codec settings
+      // Configure for MP4 with optimal quality settings
       this.mediaRecorder = new MediaRecorder(monoStream, {
-        mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 24000  // Reduced from 32000 to ensure smaller file size
+        mimeType: 'audio/mp4',
+        audioBitsPerSecond: 32000  // Balanced quality for speech
       });
 
       this.audioChunks = [];
@@ -99,12 +92,12 @@ export class AudioRecorder {
           this.totalSize += event.data.size;
           this.lastChunkTime = Date.now();
 
-          // Log effective bitrate
+          // Log effective bitrate and projected size
           const duration = (Date.now() - this.recordingStartTime) / 1000;
           const effectiveBitrate = (this.totalSize * 8) / duration;
           const projectedSize = (effectiveBitrate * this.MAX_DURATION_MS) / (8 * 1000 * 1024 * 1024);
           
-          console.log(`Current recording stats:
+          console.log(`Recording stats:
             - Duration: ${duration.toFixed(1)}s
             - Total size: ${(this.totalSize / (1024 * 1024)).toFixed(2)}MB
             - Effective bitrate: ${(effectiveBitrate / 1000).toFixed(1)}kbps
@@ -129,7 +122,7 @@ export class AudioRecorder {
       };
 
       this.mediaRecorder.start(this.chunkInterval);
-      console.log('Recording started with enforced mono audio');
+      console.log('Recording started with MP4 format');
     } catch (error) {
       console.error("Error accessing microphone:", error);
       this.cleanup();
@@ -173,7 +166,7 @@ export class AudioRecorder {
 
       // Check if we've received chunks recently
       const timeSinceLastChunk = Date.now() - this.lastChunkTime;
-      if (timeSinceLastChunk > 5000) { // 5 seconds threshold
+      if (timeSinceLastChunk > 5000) {
         console.warn('Long gap since last chunk, recording may be stale');
       }
 
@@ -184,7 +177,7 @@ export class AudioRecorder {
           }
           
           const audioBlob = new Blob(this.audioChunks, { 
-            type: 'audio/webm;codecs=opus'
+            type: 'audio/mp4'
           });
           this.cleanup();
           resolve(audioBlob);
@@ -209,6 +202,6 @@ export class AudioRecorder {
   }
 
   isCurrentlyRecording(): boolean {
-    return this.isRecording && !!this.mediaRecorder;
+    return this.isRecording;
   }
 }
