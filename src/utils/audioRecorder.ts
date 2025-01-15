@@ -1,4 +1,4 @@
-import { AudioFormatConfig, RecorderConfig, formatConfigs, SupportedFormat } from './audioTypes';
+import { AudioFormatConfig, RecorderConfig, formatConfigs, mimeTypes, SupportedFormat } from './audioTypes';
 import { detectAudioSupport } from './audioFormatDetector';
 
 export class AudioRecorder {
@@ -17,6 +17,7 @@ export class AudioRecorder {
   constructor() {
     const support = detectAudioSupport();
     this.recorderConfig = this.initializeRecorderConfig(support);
+    console.log('AudioRecorder initialized with config:', this.recorderConfig);
   }
 
   private initializeRecorderConfig(support: { preferredFormat: SupportedFormat }): RecorderConfig {
@@ -26,8 +27,24 @@ export class AudioRecorder {
     };
   }
 
+  private getSupportedMimeType(): string {
+    const format = this.recorderConfig.format;
+    const supportedMime = mimeTypes[format].find(mime => {
+      try {
+        return MediaRecorder.isTypeSupported(mime);
+      } catch {
+        return false;
+      }
+    });
+
+    if (!supportedMime) {
+      throw new Error(`No supported MIME type found for format: ${format}`);
+    }
+
+    return supportedMime;
+  }
+
   private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
-    // Create audio context with format-specific sample rate
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
       sampleRate: this.recorderConfig.config.sampleRate,
       latencyHint: 'interactive'
@@ -36,33 +53,10 @@ export class AudioRecorder {
     const source = this.audioContext.createMediaStreamSource(stream);
     const destination = this.audioContext.createMediaStreamDestination();
 
-    // For iOS, we'll use a simpler approach to ensure compatibility
-    if (this.recorderConfig.format === 'mp4') {
-      // Simple mono downmix for iOS/MP4
-      const monoMixer = this.audioContext.createChannelMerger(1);
-      source.connect(monoMixer);
-      monoMixer.connect(destination);
-    } else {
-      // More detailed processing for WebM
-      const processor = this.audioContext.createScriptProcessor(2048, 2, 1);
-      
-      processor.onaudioprocess = (e) => {
-        const inputBuffer = e.inputBuffer;
-        const outputBuffer = e.outputBuffer;
-        
-        // Get the mono channel data
-        const inputData = inputBuffer.getChannelData(0);
-        const outputData = outputBuffer.getChannelData(0);
-        
-        // Simple copy for mono
-        for (let i = 0; i < inputBuffer.length; i++) {
-          outputData[i] = inputData[i];
-        }
-      };
-      
-      source.connect(processor);
-      processor.connect(destination);
-    }
+    // Simple mono mixing for all formats
+    const monoMixer = this.audioContext.createChannelMerger(1);
+    source.connect(monoMixer);
+    monoMixer.connect(destination);
     
     const track = destination.stream.getAudioTracks()[0];
     console.log('Audio configuration:', {
@@ -98,7 +92,7 @@ export class AudioRecorder {
       this.recordingStartTime = Date.now();
       this.totalSize = 0;
 
-      const mimeType = `${this.recorderConfig.config.mimeType};codecs=${this.recorderConfig.config.codec}`;
+      const mimeType = this.getSupportedMimeType();
       console.log('Using MIME type:', mimeType);
       
       this.mediaRecorder = new MediaRecorder(monoStream, {
@@ -201,7 +195,7 @@ export class AudioRecorder {
             throw new Error("No audio data collected");
           }
           
-          const mimeType = `${this.recorderConfig.config.mimeType};codecs=${this.recorderConfig.config.codec}`;
+          const mimeType = this.getSupportedMimeType();
           const audioBlob = new Blob(this.audioChunks, { type: mimeType });
           this.cleanup();
           resolve(audioBlob);

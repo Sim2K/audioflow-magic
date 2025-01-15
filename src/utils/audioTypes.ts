@@ -6,6 +6,17 @@ export interface AudioFormatConfig {
   sampleRate: number;
 }
 
+// Define all supported MIME types for each format
+export const mimeTypes = {
+  webm: ['audio/webm;codecs=opus', 'audio/webm'],
+  mp4: [
+    'audio/mp4;codecs=mp4a.40.2',
+    'audio/mp4;codecs=aac',
+    'audio/aac',
+    'audio/mp4'
+  ]
+} as const;
+
 export const formatConfigs = {
   webm: {
     mimeType: 'audio/webm',
@@ -16,10 +27,10 @@ export const formatConfigs = {
   },
   mp4: {
     mimeType: 'audio/mp4',
-    codec: 'aac',
+    codec: 'mp4a.40.2',  // Standard AAC codec identifier
     extension: 'm4a',
     bitrate: 32000,
-    sampleRate: 22050  // Optimized for speech
+    sampleRate: 22050
   }
 } as const;
 
