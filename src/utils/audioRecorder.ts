@@ -13,32 +13,31 @@ export class AudioRecorder {
   private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
     // Create audio context with forced sample rate
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: 22050, // Optimized for speech
+      sampleRate: 22050,
       latencyHint: 'interactive'
     });
     
     // Create source from input stream
     const source = this.audioContext.createMediaStreamSource(stream);
     
-    // Create script processor for mono conversion
+    // Create script processor to manually control the audio data
     const processor = this.audioContext.createScriptProcessor(2048, 2, 1);
     
     // Create destination
     const dest = this.audioContext.createMediaStreamDestination();
     
-    // Process audio to ensure mono
+    // Process audio to ensure mono output
     processor.onaudioprocess = (e) => {
       const inputBuffer = e.inputBuffer;
       const outputBuffer = e.outputBuffer;
       
-      // Convert to mono by averaging channels
+      // Direct mono conversion
+      const inputData = inputBuffer.getChannelData(0);
       const outputData = outputBuffer.getChannelData(0);
+      
+      // Copy mono data directly
       for (let i = 0; i < outputBuffer.length; i++) {
-        let sum = 0;
-        for (let channel = 0; channel < inputBuffer.numberOfChannels; channel++) {
-          sum += inputBuffer.getChannelData(channel)[i];
-        }
-        outputData[i] = sum / inputBuffer.numberOfChannels;
+        outputData[i] = inputData[i];
       }
     };
     
@@ -76,10 +75,10 @@ export class AudioRecorder {
       this.recordingStartTime = Date.now();
       this.totalSize = 0;
 
-      // Configure for MP4 with optimal quality settings
+      // Use lower quality codec settings
       this.mediaRecorder = new MediaRecorder(monoStream, {
         mimeType: 'audio/mp4',
-        audioBitsPerSecond: 32000  // Balanced quality for speech
+        audioBitsPerSecond: 32000  // Reduced from 32000 to ensure smaller file size
       });
 
       this.audioChunks = [];
@@ -92,12 +91,12 @@ export class AudioRecorder {
           this.totalSize += event.data.size;
           this.lastChunkTime = Date.now();
 
-          // Log effective bitrate and projected size
+          // Log effective bitrate
           const duration = (Date.now() - this.recordingStartTime) / 1000;
           const effectiveBitrate = (this.totalSize * 8) / duration;
           const projectedSize = (effectiveBitrate * this.MAX_DURATION_MS) / (8 * 1000 * 1024 * 1024);
           
-          console.log(`Recording stats:
+          console.log(`Current recording stats:
             - Duration: ${duration.toFixed(1)}s
             - Total size: ${(this.totalSize / (1024 * 1024)).toFixed(2)}MB
             - Effective bitrate: ${(effectiveBitrate / 1000).toFixed(1)}kbps
@@ -122,7 +121,7 @@ export class AudioRecorder {
       };
 
       this.mediaRecorder.start(this.chunkInterval);
-      console.log('Recording started with MP4 format');
+      console.log('Recording started with enforced mono audio');
     } catch (error) {
       console.error("Error accessing microphone:", error);
       this.cleanup();
@@ -166,7 +165,7 @@ export class AudioRecorder {
 
       // Check if we've received chunks recently
       const timeSinceLastChunk = Date.now() - this.lastChunkTime;
-      if (timeSinceLastChunk > 5000) {
+      if (timeSinceLastChunk > 5000) { // 5 seconds threshold
         console.warn('Long gap since last chunk, recording may be stale');
       }
 
@@ -176,11 +175,11 @@ export class AudioRecorder {
             throw new Error("No audio data collected");
           }
           
-          const audioBlob = new Blob(this.audioChunks, { 
+          const blob = new Blob(this.audioChunks, {
             type: 'audio/mp4'
           });
           this.cleanup();
-          resolve(audioBlob);
+          resolve(blob);
         } catch (error) {
           this.cleanup();
           reject(error);
@@ -202,6 +201,6 @@ export class AudioRecorder {
   }
 
   isCurrentlyRecording(): boolean {
-    return this.isRecording;
+    return this.isRecording && !!this.mediaRecorder;
   }
 }

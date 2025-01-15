@@ -14,7 +14,7 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
   }
 
   try {
-    // Check file size first
+    // Check WebM file size first
     const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
     if (audioBlob.size > MAX_FILE_SIZE) {
       throw new Error(`Audio file size (${(audioBlob.size / 1024 / 1024).toFixed(2)}MB) exceeds the maximum limit of 25MB. Please record a shorter message or check audio settings.`);
@@ -35,11 +35,11 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
       for (let i = 0; i < chunks; i++) {
         const start = i * MAX_CHUNK_SIZE;
         const end = Math.min((i + 1) * MAX_CHUNK_SIZE, audioBlob.size);
-        const chunk = audioBlob.slice(start, end, audioBlob.type);
+        const chunk = audioBlob.slice(start, end, 'audio/mp4');
         
         // Transcribe chunk
         const formData = new FormData();
-        formData.append('file', chunk, `chunk.${audioBlob.type.split('/')[1]}`);
+        formData.append('file', chunk, 'chunk.mp4');
         formData.append('model', 'whisper-1');
         
         const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -51,9 +51,7 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Transcription error details:', errorData);
-          throw new Error(`Transcription failed: ${response.statusText}. ${errorData.error?.message || ''}`);
+          throw new Error(`Transcription failed: ${response.statusText}`);
         }
 
         const result: WhisperResponse = await response.json();
@@ -62,14 +60,8 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     } else {
       // Transcribe entire file
       const formData = new FormData();
-      formData.append('file', audioBlob, `audio.${audioBlob.type.split('/')[1]}`);
+      formData.append('file', audioBlob, 'audio.mp4');
       formData.append('model', 'whisper-1');
-
-      console.log('Sending audio for transcription:', {
-        type: audioBlob.type,
-        size: audioBlob.size,
-        filename: `audio.${audioBlob.type.split('/')[1]}`
-      });
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
@@ -80,9 +72,7 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Transcription error details:', errorData);
-        throw new Error(`Transcription failed: ${response.statusText}. ${errorData.error?.message || ''}`);
+        throw new Error(`Transcription failed: ${response.statusText}`);
       }
 
       const result: WhisperResponse = await response.json();
@@ -99,6 +89,12 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
 
     const transcript = cleanTranscript;
 
+    // Now convert to MP3 for download after transcription is complete
+    const audioData = await audioBlob.arrayBuffer();
+    const audioContext = new AudioContext();
+    const audioBuffer = await audioContext.decodeAudioData(audioData);
+    const mp3Blob = await convertToMp3(audioBuffer);
+
     // Process with GPT-4
     const endpoint = flow.endpoint || DEFAULT_COMPLETION_ENDPOINT;
     const completionResponse = await fetch(`https://api.openai.com/v1/chat/completions`, {
@@ -108,31 +104,59 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: flow.model || 'gpt-4',
+        model: "gpt-4o-mini",
         messages: [
-          { role: 'system', content: flow.systemPrompt || 'You are a helpful assistant.' },
-          { role: 'user', content: transcript }
+          {
+            role: "system",
+            content: [
+              {
+                text: "You are a very helpful assistant. You are good at creating summaries from transcriptions and following user's requests/actions/tasks to action on translations given. You think step by step to make the best use of the JSON schema given to use to respond to the user.",
+                type: "text"
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: [
+              {
+                text: `Read the {Instructions} which will instruct you on how to work with the given {transcript}. Respond using the format shown in the {JSON Template} and add at the top of the {JSON Template} a generated title based on the contents of the {JSON Template} and the key pair holding that data will look like this, "theFlowTitle": " ... a title representing the contents of the {JSON Template} ...". This will sit at the start of every JSON response object and be named "theFlowTitle". "theFlowTitle" will be independent of any details in the {JSON Template}, for example, if 'title' exists in the {JSON Template}, then both 'title' and 'theFlowTitle' will be shown.
+
+Instructions:
+${flow.prompt}
+
+'Transcript':
+${transcript}
+
+'JSON Template':
+${flow.format}`,
+                type: "text"
+              }
+            ]
+          }
         ],
-        temperature: flow.temperature || 0.7,
-        max_tokens: flow.maxTokens || 500,
-      }),
+        response_format: { type: "json_object" },
+        temperature: 1,
+        max_completion_tokens: 2048,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0
+      })
     });
 
     if (!completionResponse.ok) {
-      const errorData = await completionResponse.json().catch(() => ({}));
-      console.error('GPT processing error details:', errorData);
-      throw new Error(`GPT processing failed: ${completionResponse.statusText}. ${errorData.error?.message || ''}`);
+      const error = await completionResponse.json();
+      throw new Error(error.error?.message || 'Failed to process transcript');
     }
 
-    const processedResponse = await completionResponse.json();
+    const completionData = await completionResponse.json();
+    const processedResponse = JSON.parse(completionData.choices[0].message.content);
 
     return {
       transcript,
       processedResponse
     };
-
   } catch (error) {
-    console.error('Transcription/processing error:', error);
+    console.error('Error in transcription process:', error);
     throw error;
   }
 }
