@@ -325,3 +325,106 @@ src/
   - Purpose: Ensures proper routing for direct URL access and page refreshes
 
 ### UI Components{{ ... }}
+
+# Database Structure - Do not edit or change anything in this section below
+
+## userprofile
+
+```sql
+create table
+  public.userprofile (
+    user_id uuid not null,
+    first_name text null,
+    last_name text null,
+    coaching_style_preference text null,
+    feedback_frequency text null,
+    privacy_settings jsonb null,
+    is_active boolean null default true,
+    last_logged_in timestamp with time zone null,
+    nick_name text null,
+    user_email text null,
+    induction_complete boolean null default false,
+    country text null,
+    city text null,
+    age numeric null,
+    gender text null,
+    last_donation timestamp with time zone null,
+    admin boolean null default false,
+    subscription_end_date date null default (now() + '30 days'::interval),
+    date_joined timestamp with time zone null default now(),
+    timezone text null default 'UTC'::text,
+    language text null default 'en-gb'::text,
+    constraint userprofile_pkey primary key (user_id),
+    constraint userprofile_user_id_fkey foreign key (user_id) references auth.users (id) on delete cascade
+  ) tablespace pg_default;
+```
+
+## Transcript table
+
+```sql
+-- Create Transcripts table
+CREATE TABLE transcripts (
+    -- Core fields
+    id bigint primary key generated always as identity,
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),
+    flow_id UUID NOT NULL,
+    transcript TEXT NOT NULL,
+    response JSONB CHECK (jsonb_typeof(response) = 'object'),
+    audio_url TEXT,
+    api_forward_result JSONB CHECK (jsonb_typeof(api_forward_result) = 'object'),
+    
+    -- Metadata
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    
+    -- Constraints
+    CONSTRAINT transcript_not_empty CHECK (char_length(transcript) > 0)
+);
+
+-- Create indexes
+CREATE INDEX idx_transcripts_user_id ON transcripts(user_id);
+CREATE INDEX idx_transcripts_flow_id ON transcripts(flow_id);
+CREATE INDEX idx_transcripts_timestamp ON transcripts(timestamp);
+
+-- Add RLS policies
+ALTER TABLE transcripts ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can only view their own transcripts
+CREATE POLICY "Users can view own transcripts" ON transcripts
+    FOR SELECT
+    USING (auth.uid() = user_id);
+
+-- Policy: Users can insert their own transcripts
+CREATE POLICY "Users can insert own transcripts" ON transcripts
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+-- Policy: Users can update their own transcripts
+CREATE POLICY "Users can update own transcripts" ON transcripts
+    FOR UPDATE
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- Policy: Users can delete their own transcripts
+CREATE POLICY "Users can delete own transcripts" ON transcripts
+    FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- Create updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_transcripts_updated_at
+    BEFORE UPDATE ON transcripts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Add comment
+COMMENT ON TABLE transcripts IS 'Stores user transcripts with their associated flows and responses';
+```
