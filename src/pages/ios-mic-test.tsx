@@ -8,9 +8,18 @@ const iOSMicTest = () => {
   const [error, setError] = useState<string | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<string>("");
   const [constraints, setConstraints] = useState<MediaStreamConstraints>({ audio: true });
+  const [currentMimeType, setCurrentMimeType] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const supportedMimeTypes = [
+    'audio/webm',
+    'audio/mp4',
+    'audio/aac',
+    'audio/wav',
+    'audio/ogg'
+  ];
 
   // Get device info on component mount
   useEffect(() => {
@@ -21,31 +30,40 @@ const iOSMicTest = () => {
       Platform: ${navigator.platform}
       Is iOS: ${isIOS}
       Vendor: ${navigator.vendor}
+      
+      Supported MIME Types:
+      ${supportedMimeTypes.map(type => 
+        `${type}: ${MediaRecorder.isTypeSupported(type) ? '✓' : '✗'}`
+      ).join('\n')}
     `);
+    
+    // Set initial MIME type
+    const firstSupported = supportedMimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+    setCurrentMimeType(firstSupported || null);
   }, []);
 
-  const getSupportedMimeType = () => {
-    const types = [
-      'audio/webm',
-      'audio/mp4',
-      'audio/aac',
-      'audio/wav',
-      'audio/ogg'
-    ];
+  const cycleMimeType = () => {
+    const supportedTypes = supportedMimeTypes.filter(type => MediaRecorder.isTypeSupported(type));
+    if (supportedTypes.length === 0) return;
+
+    const currentIndex = supportedTypes.indexOf(currentMimeType || supportedTypes[0]);
+    const nextIndex = (currentIndex + 1) % supportedTypes.length;
+    const nextType = supportedTypes[nextIndex];
     
-    for (const type of types) {
-      if (MediaRecorder.isTypeSupported(type)) {
-        console.log('Supported type:', type);
-        return type;
-      }
-    }
-    return null;
+    console.log('Switching to MIME type:', nextType);
+    setCurrentMimeType(nextType);
+    setError(null);
   };
 
   const startRecording = async () => {
     try {
       setError(null);
+      if (!currentMimeType) {
+        throw new Error("No supported audio MIME types found");
+      }
+
       console.log("Requesting media stream with constraints:", constraints);
+      console.log("Using MIME type:", currentMimeType);
       
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log("Stream obtained:", stream);
@@ -58,14 +76,8 @@ const iOSMicTest = () => {
       
       streamRef.current = stream;
 
-      const mimeType = getSupportedMimeType();
-      if (!mimeType) {
-        throw new Error("No supported audio MIME types found");
-      }
-
-      console.log("Using MIME type:", mimeType);
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: mimeType
+        mimeType: currentMimeType
       });
       
       console.log("MediaRecorder created:", mediaRecorder);
@@ -80,7 +92,7 @@ const iOSMicTest = () => {
 
       mediaRecorder.onstop = () => {
         console.log("Recording stopped");
-        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+        const blob = new Blob(recordedChunksRef.current, { type: currentMimeType });
         const url = URL.createObjectURL(blob);
         setAudioURL(url);
         recordedChunksRef.current = [];
@@ -163,6 +175,11 @@ const iOSMicTest = () => {
               <Button onClick={testWithDifferentConstraints} variant="outline">
                 Test Different Constraints
               </Button>
+
+              <Button onClick={cycleMimeType} variant="outline" 
+                disabled={!supportedMimeTypes.some(type => MediaRecorder.isTypeSupported(type))}>
+                Test Different MIME Types
+              </Button>
             </div>
 
             {error && (
@@ -172,9 +189,12 @@ const iOSMicTest = () => {
             )}
 
             <div className="space-y-2">
-              <p>Current Constraints:</p>
+              <p>Current Settings:</p>
               <pre className="bg-muted p-4 rounded-lg text-sm">
-                {JSON.stringify(constraints, null, 2)}
+                {JSON.stringify({
+                  constraints: constraints,
+                  mimeType: currentMimeType
+                }, null, 2)}
               </pre>
             </div>
 
@@ -183,7 +203,7 @@ const iOSMicTest = () => {
                 <h2 className="text-lg font-semibold">Recorded Audio:</h2>
                 <audio controls src={audioURL} className="w-full" />
                 <Button asChild variant="outline">
-                  <a href={audioURL} download="ios_test_recording.webm">
+                  <a href={audioURL} download={`ios_test_recording${currentMimeType ? '.' + currentMimeType.split('/')[1] : ''}`}>
                     Download Audio
                   </a>
                 </Button>
