@@ -1,10 +1,37 @@
 import { StorageKeys } from './storage';
 import { Flow } from './storage';
+import { formatConfigs, SupportedFormat } from './audioTypes';
 
 const DEFAULT_COMPLETION_ENDPOINT = 'v1/completions';
 
 interface WhisperResponse {
   text: string;
+}
+
+async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): Promise<FormData> {
+  const formData = new FormData();
+  const config = formatConfigs[format];
+  
+  // Check if file needs to be chunked (>25MB)
+  if (audioBlob.size > 25 * 1024 * 1024) {
+    console.log('Audio file too large, chunking...');
+    const chunkSize = 20 * 1024 * 1024; // 20MB chunks
+    const chunks = Math.ceil(audioBlob.size / chunkSize);
+    
+    for (let i = 0; i < chunks; i++) {
+      const start = i * chunkSize;
+      const end = Math.min(start + chunkSize, audioBlob.size);
+      const chunk = audioBlob.slice(start, end, `${config.mimeType};codecs=${config.codec}`);
+      formData.append('file', chunk, `chunk_${i}.${config.extension}`);
+    }
+  } else {
+    formData.append('file', audioBlob, `audio.${config.extension}`);
+  }
+  
+  formData.append('model', 'whisper-1');
+  formData.append('language', 'en');
+  
+  return formData;
 }
 
 export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ transcript: string; processedResponse: any }> {
@@ -29,55 +56,23 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     const MAX_CHUNK_SIZE = 24 * 1024 * 1024; // 24MB
     let transcriptParts: string[] = [];
     
-    if (audioBlob.size > MAX_CHUNK_SIZE) {
-      // Split into chunks
-      const chunks = Math.ceil(audioBlob.size / MAX_CHUNK_SIZE);
-      for (let i = 0; i < chunks; i++) {
-        const start = i * MAX_CHUNK_SIZE;
-        const end = Math.min((i + 1) * MAX_CHUNK_SIZE, audioBlob.size);
-        const chunk = audioBlob.slice(start, end, 'audio/mp4');
-        
-        // Transcribe chunk
-        const formData = new FormData();
-        formData.append('file', chunk, 'chunk.mp4');
-        formData.append('model', 'whisper-1');
-        
-        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: formData,
-        });
+    const format = audioBlob.type === 'audio/webm' ? 'webm' : 'mp4';
+    const formData = await prepareAudioForUpload(audioBlob, format as SupportedFormat);
 
-        if (!response.ok) {
-          throw new Error(`Transcription failed: ${response.statusText}`);
-        }
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData,
+    });
 
-        const result: WhisperResponse = await response.json();
-        transcriptParts.push(result.text);
-      }
-    } else {
-      // Transcribe entire file
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'audio.mp4');
-      formData.append('model', 'whisper-1');
-
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Transcription failed: ${response.statusText}`);
-      }
-
-      const result: WhisperResponse = await response.json();
-      transcriptParts = [result.text];
+    if (!response.ok) {
+      throw new Error(`Transcription failed: ${response.statusText}`);
     }
+
+    const result: WhisperResponse = await response.json();
+    transcriptParts = [result.text];
 
     // Clean and join transcript parts
     const cleanTranscript = transcriptParts

@@ -1,3 +1,6 @@
+import { AudioFormatConfig, RecorderConfig, formatConfigs, SupportedFormat } from './audioTypes';
+import { detectAudioSupport } from './audioFormatDetector';
+
 export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
@@ -9,11 +12,24 @@ export class AudioRecorder {
   private readonly MAX_DURATION_MS: number = 4200000; // 70 minutes
   private totalSize: number = 0;
   private audioContext: AudioContext | null = null;
+  private recorderConfig: RecorderConfig;
+
+  constructor() {
+    const support = detectAudioSupport();
+    this.recorderConfig = this.initializeRecorderConfig(support);
+  }
+
+  private initializeRecorderConfig(support: { preferredFormat: SupportedFormat }): RecorderConfig {
+    return {
+      format: support.preferredFormat,
+      config: formatConfigs[support.preferredFormat]
+    };
+  }
 
   private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
     // Create audio context with forced sample rate
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: 32000,  // Increased for better voice clarity
+      sampleRate: this.recorderConfig.config.sampleRate,
       latencyHint: 'interactive'
     });
     
@@ -26,18 +42,26 @@ export class AudioRecorder {
     // Create destination
     const dest = this.audioContext.createMediaStreamDestination();
     
-    // Process audio to ensure mono output
+    // Process audio to ensure mono and correct sample rate
     processor.onaudioprocess = (e) => {
       const inputBuffer = e.inputBuffer;
       const outputBuffer = e.outputBuffer;
       
-      // Direct mono conversion
-      const inputData = inputBuffer.getChannelData(0);
-      const outputData = outputBuffer.getChannelData(0);
+      // Downsample if needed
+      const downsampleRatio = Math.floor(inputBuffer.sampleRate / this.recorderConfig.config.sampleRate);
       
-      // Copy mono data directly
-      for (let i = 0; i < outputBuffer.length; i++) {
-        outputData[i] = inputData[i];
+      for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+        const inputData = inputBuffer.getChannelData(0); // Always use first channel for mono
+        const outputData = outputBuffer.getChannelData(channel);
+        
+        // Average samples for downsampling
+        for (let i = 0; i < outputBuffer.length; i++) {
+          let sum = 0;
+          for (let j = 0; j < downsampleRatio; j++) {
+            sum += inputData[i * downsampleRatio + j] || 0;
+          }
+          outputData[i] = sum / downsampleRatio;
+        }
       }
     };
     
@@ -62,7 +86,7 @@ export class AudioRecorder {
       const initialStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
-          sampleRate: 32000,  // Increased for better voice clarity
+          sampleRate: this.recorderConfig.config.sampleRate,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -75,10 +99,12 @@ export class AudioRecorder {
       this.recordingStartTime = Date.now();
       this.totalSize = 0;
 
-      // Use lower quality codec settings
+      const mimeType = `${this.recorderConfig.config.mimeType};codecs=${this.recorderConfig.config.codec}`;
+      
+      // Use format-specific codec settings
       this.mediaRecorder = new MediaRecorder(monoStream, {
-        mimeType: 'audio/mp4',
-        audioBitsPerSecond: 48000  // Increased for better quality while staying under limit
+        mimeType,
+        audioBitsPerSecond: this.recorderConfig.config.bitrate
       });
 
       this.audioChunks = [];
@@ -97,6 +123,7 @@ export class AudioRecorder {
           const projectedSize = (effectiveBitrate * this.MAX_DURATION_MS) / (8 * 1000 * 1024 * 1024);
           
           console.log(`Current recording stats:
+            - Format: ${this.recorderConfig.format}
             - Duration: ${duration.toFixed(1)}s
             - Total size: ${(this.totalSize / (1024 * 1024)).toFixed(2)}MB
             - Effective bitrate: ${(effectiveBitrate / 1000).toFixed(1)}kbps
@@ -121,7 +148,7 @@ export class AudioRecorder {
       };
 
       this.mediaRecorder.start(this.chunkInterval);
-      console.log('Recording started with enforced mono audio');
+      console.log(`Recording started with format: ${this.recorderConfig.format}`);
     } catch (error) {
       console.error("Error accessing microphone:", error);
       this.cleanup();
@@ -175,11 +202,10 @@ export class AudioRecorder {
             throw new Error("No audio data collected");
           }
           
-          const blob = new Blob(this.audioChunks, {
-            type: 'audio/mp4'
-          });
+          const mimeType = `${this.recorderConfig.config.mimeType};codecs=${this.recorderConfig.config.codec}`;
+          const audioBlob = new Blob(this.audioChunks, { type: mimeType });
           this.cleanup();
-          resolve(blob);
+          resolve(audioBlob);
         } catch (error) {
           this.cleanup();
           reject(error);
