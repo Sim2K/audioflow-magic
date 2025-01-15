@@ -13,7 +13,7 @@ export class AudioRecorder {
   private async createMonoStream(stream: MediaStream): Promise<MediaStream> {
     // Create audio context with forced sample rate
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: 22050,
+      sampleRate: 32000,  // Increased for better voice clarity
       latencyHint: 'interactive'
     });
     
@@ -62,7 +62,7 @@ export class AudioRecorder {
       const initialStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
-          sampleRate: 22050,
+          sampleRate: 32000,  // Increased for better voice clarity
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -78,7 +78,7 @@ export class AudioRecorder {
       // Use lower quality codec settings
       this.mediaRecorder = new MediaRecorder(monoStream, {
         mimeType: 'audio/mp4',
-        audioBitsPerSecond: 32000  // Reduced from 32000 to ensure smaller file size
+        audioBitsPerSecond: 48000  // Increased for better quality while staying under limit
       });
 
       this.audioChunks = [];
