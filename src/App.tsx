@@ -10,6 +10,7 @@ import Record from "./pages/Record";
 import Flows from "./pages/Flows";
 import Settings from "./pages/Settings";
 import Transcripts from "./pages/Transcripts";
+import IOSMicTest from "./pages/ios-mic-test";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/features" element={<Features />} />
+            <Route path="/ios-mic-test" element={<IOSMicTest />} />
             <Route element={<AppLayout />}>
               <Route path="/record" element={<Record />} />
               <Route path="/flows" element={<Flows />} />
