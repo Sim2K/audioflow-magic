@@ -196,10 +196,20 @@ export class AudioRecorder {
           }
           
           const mimeType = this.getSupportedMimeType();
+          console.log('Creating final blob with MIME type:', mimeType);
+          
+          // Create blob with the correct MIME type
           const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+          console.log('Final blob created:', {
+            size: audioBlob.size,
+            type: audioBlob.type,
+            chunks: this.audioChunks.length
+          });
+          
           this.cleanup();
           resolve(audioBlob);
         } catch (error) {
+          console.error('Error creating final audio blob:', error);
           this.cleanup();
           reject(error);
         }
@@ -213,6 +223,7 @@ export class AudioRecorder {
           handleStop();
         }
       } catch (error) {
+        console.error('Error stopping recording:', error);
         this.cleanup();
         reject(error);
       }
