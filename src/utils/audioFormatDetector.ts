@@ -4,6 +4,23 @@ export interface AudioFormatSupport {
   preferredFormat: 'webm' | 'mp4';
 }
 
+function isIOSDevice(): boolean {
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+  
+  // Check for iPad first as it might report as MacIntel
+  if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform)) {
+    return true;
+  }
+  
+  // Standard iOS detection
+  return /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+}
+
+function isSafari(): boolean {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('safari') && !userAgent.includes('chrome') && !userAgent.includes('android');
+}
+
 export function detectAudioSupport(): AudioFormatSupport {
   const support = {
     isWebMSupported: false,
@@ -20,21 +37,46 @@ export function detectAudioSupport(): AudioFormatSupport {
 
   // Check MP4 support
   try {
-    support.isMp4Supported = MediaRecorder.isTypeSupported('audio/mp4;codecs=aac');
+    // Check multiple MP4 codec variations for broader device support
+    support.isMp4Supported = (
+      MediaRecorder.isTypeSupported('audio/mp4;codecs=aac') ||
+      MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2') ||
+      MediaRecorder.isTypeSupported('audio/aac')
+    );
   } catch (e) {
     console.warn('MP4 support check failed:', e);
   }
 
-  // Determine preferred format
-  // Prefer MP4 on Safari/iOS, WebM elsewhere if supported
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isIOS = isIOSDevice();
+  const isSafariBrowser = isSafari();
 
-  if ((isSafari || isIOS) && support.isMp4Supported) {
+  console.log('Device detection:', {
+    isIOS,
+    isSafariBrowser,
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    maxTouchPoints: navigator.maxTouchPoints,
+    webmSupport: support.isWebMSupported,
+    mp4Support: support.isMp4Supported
+  });
+
+  // Force MP4 for iOS devices regardless of detected support
+  if (isIOS) {
     support.preferredFormat = 'mp4';
-  } else if (support.isWebMSupported) {
+    // iOS Safari sometimes incorrectly reports codec support
+    support.isMp4Supported = true;
+    support.isWebMSupported = false;
+  }
+  // For Safari on desktop, prefer MP4 if supported
+  else if (isSafariBrowser && support.isMp4Supported) {
+    support.preferredFormat = 'mp4';
+  }
+  // For all other browsers, prefer WebM if supported
+  else if (support.isWebMSupported) {
     support.preferredFormat = 'webm';
-  } else if (support.isMp4Supported) {
+  }
+  // Fallback to MP4 if WebM is not supported
+  else if (support.isMp4Supported) {
     support.preferredFormat = 'mp4';
   }
 
