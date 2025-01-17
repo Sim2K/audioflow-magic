@@ -326,6 +326,45 @@ src/
 
 ### UI Components{{ ... }}
 
+### Authentication Features (Added 2025-01-16)
+1. **User Authentication**
+   - Sign In with email/password
+   - Registration with email/password
+   - Password reset functionality
+   - Protected routes for authenticated users
+   - Persistent sessions with Supabase
+
+2. **User Profile**
+   - Stored in userprofile table
+   - Created on registration
+   - Fields:
+     ```typescript
+     - user_id (UUID, primary key)
+     - first_name (text)
+     - last_name (text)
+     - user_email (text)
+     - is_active (boolean)
+     - last_logged_in (timestamp)
+     ```
+
+3. **Password Requirements**
+   - Minimum 8 characters
+   - Must contain letters and numbers
+   - Validated on both client and server side
+
+4. **Navigation**
+   - Top-right menu dropdown
+   - Contextual menu items based on auth state
+   - Protected route wrapper for authenticated routes
+
+5. **UI/UX**
+   - Consistent with existing design
+   - Responsive layout
+   - Form validation feedback
+   - Loading states
+   - Error handling
+   - Success messages
+
 # Database Structure - Do not edit or change anything in this section below
 
 ## userprofile
@@ -427,4 +466,3 @@ CREATE TRIGGER update_transcripts_updated_at
 
 -- Add comment
 COMMENT ON TABLE transcripts IS 'Stores user transcripts with their associated flows and responses';
-```
