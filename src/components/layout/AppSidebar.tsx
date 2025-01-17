@@ -1,17 +1,30 @@
 import { NavLink } from "react-router-dom";
-import { Mic, GitBranch, Settings, FileText, User, Menu, Home, Sparkles } from "lucide-react";
+import { Mic, GitBranch, Settings, FileText, User, Menu, Home, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from "react-router-dom";
 
 export function AppSidebar() {
   const { setOpenMobile, isMobile, openMobile } = useSidebar();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleNavClick = () => {
     if (isMobile) {
       setOpenMobile(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 
@@ -153,6 +166,18 @@ export function AppSidebar() {
               </div>
             )}
           </div>
+          <button
+            onClick={handleSignOut}
+            className={cn(
+              "w-full flex items-center px-2 py-2 text-sm font-medium rounded-md",
+              "text-red-600 hover:bg-red-50 hover:text-red-700",
+              "dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300",
+              "transition-colors duration-200"
+            )}
+          >
+            <LogOut className={cn("h-5 w-5", showLabels ? "mr-3" : "")} />
+            {showLabels && <span>Sign Out</span>}
+          </button>
         </div>
       </div>
     </Sidebar>

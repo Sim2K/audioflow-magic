@@ -10,6 +10,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { MainLayout } from "./components/layout/MainLayout";
+import { PublicLayout } from "./components/layout/PublicLayout";
 import Home from "./pages/Home";
 import Features from "./pages/Features";
 import Record from "./pages/Record";
@@ -30,38 +31,32 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={
-                <div className="min-h-screen bg-background">
-                  <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    <div className="container flex h-14 items-center justify-between">
-                      <div className="mr-4">
-                        <a href="/" className="flex items-center space-x-2">
-                          <span className="font-bold">AIAudioFlow</span>
-                        </a>
-                      </div>
-                      <MenuDropdown />
-                    </div>
-                  </header>
+                <PublicLayout>
                   <Home />
-                </div>
+                </PublicLayout>
               } />
               <Route path="/features" element={
-                <div className="min-h-screen bg-background">
-                  <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    <div className="container flex h-14 items-center justify-between">
-                      <div className="mr-4">
-                        <a href="/" className="flex items-center space-x-2">
-                          <span className="font-bold">AIAudioFlow</span>
-                        </a>
-                      </div>
-                      <MenuDropdown />
-                    </div>
-                  </header>
+                <PublicLayout>
                   <Features />
-                </div>
+                </PublicLayout>
               } />
-              <Route path="/auth/login" element={<LoginPage />} />
-              <Route path="/auth/register" element={<RegisterPage />} />
-              <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+              
+              {/* Auth Routes */}
+              <Route path="/auth/login" element={
+                <PublicLayout>
+                  <LoginPage />
+                </PublicLayout>
+              } />
+              <Route path="/auth/register" element={
+                <PublicLayout>
+                  <RegisterPage />
+                </PublicLayout>
+              } />
+              <Route path="/auth/reset-password" element={
+                <PublicLayout>
+                  <ResetPasswordPage />
+                </PublicLayout>
+              } />
 
               {/* Protected App Routes */}
               <Route path="/record" element={

@@ -73,9 +73,15 @@ export function LoginForm() {
         {isLoading ? 'Signing in...' : 'Sign in'}
       </Button>
       <div className="text-center space-y-2">
-        <Link to="/auth/forgot-password" className="text-sm text-muted-foreground hover:underline">
+        <Link to="/auth/reset-password" className="text-sm text-muted-foreground hover:underline">
           Forgot password?
         </Link>
+        <div className="text-sm">
+          Don't have an account?{' '}
+          <Link to="/auth/register" className="text-primary hover:underline">
+            Register
+          </Link>
+        </div>
       </div>
     </form>
   );
