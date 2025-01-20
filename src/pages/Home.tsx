@@ -17,7 +17,7 @@ export default function Home() {
               </h1>
               <p className="text-lg sm:text-xl text-purple-100 mb-8">
                 Powerful AI-driven audio processing and analysis platform. Record, transcribe,
-                and extract meaningful insights from your audio content.
+                and extract meaningful insights all from your audio content.
               </p>
               <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
                 <Link to="/record">
