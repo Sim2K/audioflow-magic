@@ -23,6 +23,8 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { useAPIForward } from "@/modules/api-connect/hooks/useAPIForward";
 import { APIResponseCard } from "@/modules/api-connect/components/APIResponseCard";
 import { AudioPreview } from "@/components/recorder/AudioPreview";
+import { useAuth } from "@/contexts/AuthContext";
+import { saveTranscript } from "@/utils/transcriptStorage";
 
 const audioRecorder = new AudioRecorder();
 
@@ -38,13 +40,14 @@ const Index = () => {
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null);
   const { toast } = useToast();
   const { apiResult, isForwarding, forwardResponse } = useAPIForward();
+  const { session } = useAuth();
 
   useEffect(() => {
     setFlows(getFlows());
   }, []);
 
   const processRecording = async (audioBlob: Blob) => {
-    if (!selectedFlow) return;
+    if (!selectedFlow || !session?.user?.id) return;
 
     try {
       const { transcript, processedResponse } = await transcribeAudio(audioBlob, selectedFlow);
@@ -54,43 +57,32 @@ const Index = () => {
       // Forward to external API if connection exists
       const forwardResult = await forwardResponse(selectedFlow, processedResponse);
 
-      // Save to localStorage for transcript history
-      let transcriptHistory;
+      // Save to Supabase using our new service
       try {
-        transcriptHistory = JSON.parse(
-          localStorage.getItem("transcripts") || "[]"
+        await saveTranscript(
+          transcript,
+          {
+            ...processedResponse,
+            theFlowTitle: processedResponse.theFlowTitle || 'Untitled Transcript'
+          },
+          selectedFlow,
+          session.user.id,
+          audioUrl,
+          forwardResult
         );
-      } catch (error) {
-        console.error('Error parsing transcript history:', error);
-        transcriptHistory = [];
-      }
 
-      transcriptHistory.push({
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        flowId: selectedFlow.id,
-        flowName: selectedFlow.name,
-        transcript,
-        response: processedResponse,
-        audioUrl: audioUrl,
-        apiForwardResult: forwardResult // Save the actual API forward result
-      });
-
-      try {
-        localStorage.setItem("transcripts", JSON.stringify(transcriptHistory));
+        toast({
+          title: "Processing completed",
+          description: "Your recording has been processed and saved successfully.",
+        });
       } catch (error) {
-        console.error('Error saving transcript history:', error);
+        console.error('Error saving transcript:', error);
         toast({
           title: "Warning",
-          description: "Could not save transcript to history.",
+          description: "Could not save transcript to database.",
           variant: "destructive",
         });
       }
-
-      toast({
-        title: "Processing completed",
-        description: "Your recording has been processed successfully.",
-      });
     } catch (error) {
       console.error("Error processing recording:", error);
       toast({

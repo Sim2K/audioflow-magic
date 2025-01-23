@@ -13,27 +13,44 @@ import JsonViewer from "@/components/JsonViewer";
 import { CopyButton } from "@/components/ui/copy-button";
 import { APIResponseCard } from "@/modules/api-connect/components/APIResponseCard";
 import { cn } from "@/lib/utils";
-
-interface Transcript {
-  id: string;
-  timestamp: string;
-  flowId: string;
-  flowName: string;
-  transcript: string;
-  response: any;
-  audioUrl?: string;
-  apiForwardResult: any;
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { getTranscripts, deleteTranscript } from "@/utils/transcriptStorage";
+import { useToast } from "@/hooks/use-toast";
+import type { TranscriptRecord } from "@/types/transcript";
 
 const Transcripts = () => {
-  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
-  const [selectedTranscript, setSelectedTranscript] = useState<Transcript | null>(null);
+  const [transcripts, setTranscripts] = useState<TranscriptRecord[]>([]);
+  const [selectedTranscript, setSelectedTranscript] = useState<TranscriptRecord | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { session } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const savedTranscripts = JSON.parse(localStorage.getItem("transcripts") || "[]");
-    setTranscripts(savedTranscripts.reverse()); // Show newest first
-  }, []);
+    const fetchTranscripts = async () => {
+      if (!session?.user?.id) {
+        setTranscripts([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const fetchedTranscripts = await getTranscripts(session.user.id);
+        setTranscripts(fetchedTranscripts);
+      } catch (error) {
+        console.error('Error fetching transcripts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load transcripts",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTranscripts();
+  }, [session?.user?.id, toast]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -44,21 +61,42 @@ const Transcripts = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const deleteTranscript = (id: string) => {
-    const updatedTranscripts = transcripts.filter((t) => t.id !== id);
-    localStorage.setItem("transcripts", JSON.stringify(updatedTranscripts));
-    setTranscripts(updatedTranscripts);
-    if (selectedTranscript?.id === id) {
-      setSelectedTranscript(null);
+  const handleDeleteTranscript = async (id: string) => {
+    if (!session?.user?.id) return;
+
+    try {
+      await deleteTranscript(id, session.user.id);
+      setTranscripts(prev => prev.filter(t => t.id !== id));
+      if (selectedTranscript?.id === id) {
+        setSelectedTranscript(null);
+      }
+      toast({
+        title: "Success",
+        description: "Transcript deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting transcript:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete transcript",
+        variant: "destructive",
+      });
     }
   };
 
   // Helper function to get display title
-  const getTranscriptTitle = (transcript: Transcript) => {
+  const getTranscriptTitle = (transcript: TranscriptRecord) => {
     return transcript.response?.theFlowTitle || 
-           transcript.flowName || 
            new Date(transcript.timestamp).toLocaleString();
   };
+
+  if (!session?.user?.id) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+        <p className="text-muted-foreground">Please log in to view transcripts</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
@@ -93,37 +131,42 @@ const Transcripts = () => {
                 <CardContent className="p-0">
                   <div className="overflow-y-auto h-[calc(100vh-12rem)]">
                     <div className="space-y-2 p-6">
-                      {transcripts.map((t) => (
-                        <div
-                          key={t.id}
-                          className={cn(
-                            "flex items-center gap-2 p-3 rounded-lg hover:bg-accent cursor-pointer",
-                            selectedTranscript?.id === t.id && "bg-accent"
-                          )}
-                          onClick={() => setSelectedTranscript(t)}
-                        >
-                          <div className="flex-1 min-w-0 mr-2">
-                            <h3 className="text-sm font-medium break-words md:truncate">
-                              {getTranscriptTitle(t)}
-                            </h3>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(t.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteTranscript(t.id);
-                            }}
+                      {isLoading ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Loading transcripts...
+                        </p>
+                      ) : transcripts.length > 0 ? (
+                        transcripts.map((t) => (
+                          <div
+                            key={t.id}
+                            className={cn(
+                              "flex items-center gap-2 p-3 rounded-lg hover:bg-accent cursor-pointer",
+                              selectedTranscript?.id === t.id && "bg-accent"
+                            )}
+                            onClick={() => setSelectedTranscript(t)}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      {transcripts.length === 0 && (
+                            <div className="flex-1 min-w-0 mr-2">
+                              <h3 className="text-sm font-medium break-words md:truncate">
+                                {getTranscriptTitle(t)}
+                              </h3>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(t.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTranscript(t.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))
+                      ) : (
                         <p className="text-sm text-muted-foreground text-center py-4">
                           No transcripts available
                         </p>
@@ -210,16 +253,14 @@ const Transcripts = () => {
                                     </CardDescription>
                                   </div>
                                   <CopyButton 
-                                    text={`Flow: ${selectedTranscript.flowName}\nCreated: ${new Date(selectedTranscript.timestamp).toLocaleString()}`} 
+                                    text={`Flow: ${selectedTranscript.response?.theFlowTitle}\nCreated: ${new Date(selectedTranscript.timestamp).toLocaleString()}`} 
                                     label="Copy details" 
                                   />
                                 </div>
                               </CardHeader>
                               <CardContent>
-                                {selectedTranscript?.response ? (
-                                  <JsonViewer 
-                                    data={selectedTranscript.response}
-                                  />
+                                {selectedTranscript.response ? (
+                                  <JsonViewer data={selectedTranscript.response} />
                                 ) : (
                                   <p className="text-sm text-muted-foreground">
                                     No processed response available
@@ -230,15 +271,8 @@ const Transcripts = () => {
                           </TabsContent>
 
                           <TabsContent value="airesponse" className="space-y-4">
-                            {selectedTranscript.apiForwardResult ? (
-                              <APIResponseCard result={selectedTranscript.apiForwardResult} />
-                            ) : (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle>API Forward Response</CardTitle>
-                                  <CardDescription>No API forward response available</CardDescription>
-                                </CardHeader>
-                              </Card>
+                            {selectedTranscript.api_forward_result && (
+                              <APIResponseCard result={selectedTranscript.api_forward_result} />
                             )}
                             <Card>
                               <CardHeader>
@@ -268,11 +302,8 @@ const Transcripts = () => {
                   </Card>
                 </>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <h2 className="text-2xl font-semibold text-muted-foreground mb-2">No Transcript Selected</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Select a transcript from the list to view its details
-                  </p>
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-muted-foreground">Select a transcript to view details</p>
                 </div>
               )}
             </div>
