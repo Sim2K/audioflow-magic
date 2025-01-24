@@ -49,19 +49,22 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     // Create FormData
     const formData = new FormData();
     
-    // Convert to mp3 format for better compatibility
+    // Keep MP3 conversion for other potential uses
     const audioData = await audioBlob.arrayBuffer();
     const audioContext = new AudioContext();
     const audioBuffer = await audioContext.decodeAudioData(audioData);
     const mp3Blob = await convertToMp3(audioBuffer);
     
-    console.log('Converted audio to MP3:', {
+    console.log('Audio conversion completed:', {
       originalSize: audioBlob.size,
+      originalType: audioBlob.type,
       mp3Size: mp3Blob.size,
       mp3Type: mp3Blob.type
     });
 
-    formData.append('file', mp3Blob, 'audio.mp3');
+    // Use original blob for OpenAI as it's already in a supported format
+    const extension = audioBlob.type.includes('webm') ? 'webm' : 'm4a';
+    formData.append('file', audioBlob, `audio.${extension}`);
     formData.append('model', 'whisper-1');
     formData.append('language', 'en');
 
