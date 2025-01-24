@@ -36,12 +36,15 @@ export interface AuthResponse {
   session: Session | null;
 }
 
-export interface AuthContextType extends AuthState {
+export interface AuthContextType {
   signIn: (email: string, password: string) => Promise<AuthResponse>;
   signUp: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  session: Session | null;
+  isLoading: boolean;
+  error: string | null;
 }
 
 export interface PasswordValidation {

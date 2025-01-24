@@ -1,25 +1,38 @@
 import { APIConnection } from '../types/api-connect';
+import { APIConnectionService } from '../../../services/apiConnectionService';
 
-const API_CONNECTIONS_KEY = 'ai_audio_flow_api_connections';
+let connectionCache: Record<string, APIConnection> = {};
 
-export function getAPIConnections(): Record<string, APIConnection> {
-  const connections = localStorage.getItem(API_CONNECTIONS_KEY);
-  return connections ? JSON.parse(connections) : {};
+export async function getAPIConnections(): Promise<Record<string, APIConnection>> {
+  return connectionCache;
 }
 
-export function saveAPIConnection(connection: APIConnection): void {
-  const connections = getAPIConnections();
-  connections[connection.flowId] = connection;
-  localStorage.setItem(API_CONNECTIONS_KEY, JSON.stringify(connections));
+export async function saveAPIConnection(connection: APIConnection, userId: string): Promise<void> {
+  if (!userId) throw new Error("User ID is required");
+
+  await APIConnectionService.saveAPIConnection(connection, connection.flowId, userId);
+  // Update cache
+  connectionCache[connection.flowId] = connection;
 }
 
-export function getAPIConnection(flowId: string): APIConnection | null {
-  const connections = getAPIConnections();
-  return connections[flowId] || null;
+export async function getAPIConnection(flowId: string, userId: string): Promise<APIConnection | null> {
+  if (!userId) throw new Error("User ID is required");
+
+  if (connectionCache[flowId]) {
+    return connectionCache[flowId];
+  }
+
+  const connection = await APIConnectionService.getAPIConnectionByFlowId(flowId, userId);
+  if (connection) {
+    connectionCache[flowId] = connection;
+  }
+  return connection;
 }
 
-export function deleteAPIConnection(flowId: string): void {
-  const connections = getAPIConnections();
-  delete connections[flowId];
-  localStorage.setItem(API_CONNECTIONS_KEY, JSON.stringify(connections));
+export async function deleteAPIConnection(flowId: string, userId: string): Promise<void> {
+  if (!userId) throw new Error("User ID is required");
+
+  await APIConnectionService.deleteAPIConnection(flowId, userId);
+  // Update cache
+  delete connectionCache[flowId];
 }

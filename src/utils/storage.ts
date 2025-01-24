@@ -6,7 +6,6 @@ export const StorageKeys = {
 export interface Flow {
   id: string;
   name: string;
-  endpoint: string;
   format: string;
   prompt: string;
   instructions: string;

@@ -16,6 +16,7 @@ import { Flow } from "@/utils/storage";
 import { saveAPIConnection, getAPIConnection } from "../utils/storage";
 import { useToast } from "@/hooks/use-toast";
 import { parseHeadersText } from "../utils/header-parser";
+import { useAuth } from "@/hooks/useAuth";
 
 interface APIConnectFormProps {
   flow: Flow;
@@ -29,95 +30,95 @@ export function APIConnectForm({ flow, isOpen, onClose }: APIConnectFormProps) {
   const [authType, setAuthType] = useState<AuthType>("None");
   const [authToken, setAuthToken] = useState("");
   const [headersText, setHeadersText] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Load existing API connection when form opens
   useEffect(() => {
-    if (isOpen) {
-      const existingConnection = getAPIConnection(flow.id);
-      if (existingConnection) {
-        setMethod(existingConnection.method);
-        setUrl(existingConnection.url);
-        setAuthType(existingConnection.authType);
-        setAuthToken(existingConnection.authToken || "");
-        
-        // Format headers back to text
-        const headersFormatted = existingConnection.headers
-          .map(header => `${header.key}: ${header.value}`)
-          .join('\n');
-        setHeadersText(headersFormatted);
-      } else {
-        // Reset form for new connections
-        setMethod("GET");
-        setUrl("");
-        setAuthType("None");
-        setAuthToken("");
-        setHeadersText("");
+    async function loadExistingConnection() {
+      if (!user) return;
+      
+      try {
+        const connection = await getAPIConnection(flow.id, user.id);
+        if (connection) {
+          setMethod(connection.method);
+          setUrl(connection.url);
+          setAuthType(connection.authType);
+          setAuthToken(connection.authToken || "");
+          
+          // Format headers from APIHeader array
+          if (connection.headers && Array.isArray(connection.headers)) {
+            const headersText = connection.headers
+              .map(header => `${header.key}: ${header.value}`)
+              .join('\n');
+            setHeadersText(headersText);
+          } else {
+            setHeadersText('');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading API connection:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load API connection",
+          variant: "destructive",
+        });
       }
-      setError(null);
     }
-  }, [flow.id, isOpen]);
+    if (isOpen) {
+      loadExistingConnection();
+    }
+  }, [flow.id, isOpen, user]);
 
-  const handleSubmit = () => {
+  const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be signed in to save API connections",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      setError(null);
-
-      // Validate URL
-      if (!url.trim()) {
-        throw new Error("URL is required");
-      }
-
-      // Validate auth token if needed
-      if ((authType === "Bearer" || authType === "Basic") && !authToken.trim()) {
-        throw new Error(`${authType} token is required`);
-      }
-
-      // Parse headers
-      const headers = headersText.trim() ? parseHeadersText(headersText) : [];
-
-      // Create connection object
-      const connection: APIConnection = {
+      const headers = parseHeadersText(headersText);
+      await saveAPIConnection({
         flowId: flow.id,
         method,
-        url: url.trim(),
-        headers,
+        url,
         authType,
-        ...(authType !== "None" && { authToken: authToken.trim() })
-      };
+        authToken: authToken || undefined,
+        headers: Object.keys(headers).length > 0 ? headers : undefined
+      }, user.id);
 
-      saveAPIConnection(connection);
-      
       toast({
         title: "Success",
         description: "API connection saved successfully",
       });
-      
       onClose();
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      console.error('Error saving API connection:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: "Failed to save API connection",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Connect API to Flow</DialogTitle>
+          <DialogTitle>Configure API Connection</DialogTitle>
           <DialogDescription>
-            Configure the API connection details for this flow.
+            Set up an API connection for flow: {flow.name}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="method">Method</Label>
-            <Select value={method} onValueChange={(value) => setMethod(value as HTTPMethod)}>
+            <Label htmlFor="method">HTTP Method</Label>
+            <Select value={method} onValueChange={(value: HTTPMethod) => setMethod(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select method" />
               </SelectTrigger>
@@ -141,8 +142,8 @@ export function APIConnectForm({ flow, isOpen, onClose }: APIConnectFormProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="authType">Authentication Type</Label>
-            <Select value={authType} onValueChange={(value) => setAuthType(value as AuthType)}>
+            <Label htmlFor="auth-type">Authentication</Label>
+            <Select value={authType} onValueChange={(value: AuthType) => setAuthType(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select auth type" />
               </SelectTrigger>
@@ -156,41 +157,37 @@ export function APIConnectForm({ flow, isOpen, onClose }: APIConnectFormProps) {
 
           {authType !== "None" && (
             <div className="grid gap-2">
-              <Label htmlFor="authToken">{authType} Token</Label>
+              <Label htmlFor="auth-token">
+                {authType === "Bearer" ? "Bearer Token" : "Basic Auth Token"}
+              </Label>
               <Input
-                id="authToken"
+                id="auth-token"
                 value={authToken}
                 onChange={(e) => setAuthToken(e.target.value)}
-                placeholder={`Enter ${authType.toLowerCase()} token`}
                 type="password"
+                placeholder={authType === "Bearer" ? "Enter bearer token" : "Enter basic auth token"}
               />
             </div>
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="headers">Headers/Parameters</Label>
+            <Label htmlFor="headers">Headers (one per line, format: Key: Value)</Label>
             <Textarea
               id="headers"
               value={headersText}
               onChange={(e) => setHeadersText(e.target.value)}
-              placeholder={`Enter headers/parameters (one per line)\nExamples:\nContent-Type: application/json\n-H "apikey: YOUR_KEY"\n-P "Authorization: Bearer TOKEN"`}
-              className="h-[120px] font-mono text-sm"
+              placeholder="Content-Type: application/json"
+              rows={4}
             />
           </div>
-
-          {error && (
-            <div className="text-sm text-red-500">
-              {error}
-            </div>
-          )}
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
-            Save
+          <Button onClick={handleSave}>
+            Save Connection
           </Button>
         </div>
       </DialogContent>

@@ -32,7 +32,6 @@ interface FlowDialogProps {
 
 export const defaultValues = {
   name: "",
-  endpoint: "",
   format: '{ "details": { "title": "", "summary": "", "valid_points": [] } }',
   prompt: "Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.",
   instructions: "",
@@ -63,7 +62,6 @@ export function FlowDialog({
       instructions: importedData.instructions || "",
       prompt: importedData.prompt || defaultValues.prompt,
       format: importedData.format || defaultValues.format,
-      endpoint: importedData.endpoint || "",
     });
   };
 
@@ -164,26 +162,6 @@ export function FlowDialog({
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="endpoint"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>API Endpoint</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Coming soon..."
-                        disabled
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      API endpoint functionality coming soon
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

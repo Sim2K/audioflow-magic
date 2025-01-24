@@ -25,10 +25,9 @@ export function FlowCard({ flow, onEdit, onDelete, onAPIConnect, detailed = fals
       <CardHeader className="flex-none">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-xl break-words">{flow.name}</CardTitle>
-            <CardDescription className="break-all mt-1">
-              Endpoint: {flow.endpoint}
-            </CardDescription>
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium">Name: {flow.name}</p>
+            </div>
           </div>
           <div className="flex gap-2">
             {onAPIConnect && (

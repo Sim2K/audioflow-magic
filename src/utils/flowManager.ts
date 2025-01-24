@@ -1,33 +1,36 @@
 import { Flow } from "./storage";
+import { FlowService } from "../services/flowService";
 
-const FLOWS_KEY = "flows";
+let cachedFlows: { [userId: string]: Flow[] } = {};
 
-export const getFlows = (): Flow[] => {
-  const flows = localStorage.getItem(FLOWS_KEY);
-  return flows ? JSON.parse(flows) : [];
+export const getFlows = async (userId: string): Promise<Flow[]> => {
+  if (!userId) throw new Error("User ID is required");
+  
+  if (!cachedFlows[userId]) {
+    cachedFlows[userId] = await FlowService.getAllFlows(userId);
+  }
+  return cachedFlows[userId];
 };
 
-export const saveFlow = (flow: Omit<Flow, "id">, isEditing?: string): Flow => {
-  const flows = getFlows();
-  const newFlow = {
-    ...flow,
-    id: isEditing || Date.now().toString(),
-  };
+export const saveFlow = async (flow: Omit<Flow, "id">, userId: string, isEditing?: string): Promise<Flow> => {
+  if (!userId) throw new Error("User ID is required");
 
+  let savedFlow: Flow;
   if (isEditing) {
-    const index = flows.findIndex((f) => f.id === isEditing);
-    if (index !== -1) {
-      flows[index] = newFlow;
-    }
+    savedFlow = await FlowService.updateFlow(isEditing, flow, userId);
   } else {
-    flows.push(newFlow);
+    savedFlow = await FlowService.createFlow(flow, userId);
   }
 
-  localStorage.setItem(FLOWS_KEY, JSON.stringify(flows));
-  return newFlow;
+  // Update cache
+  delete cachedFlows[userId];
+  return savedFlow;
 };
 
-export const deleteFlow = (id: string): void => {
-  const flows = getFlows().filter((flow) => flow.id !== id);
-  localStorage.setItem(FLOWS_KEY, JSON.stringify(flows));
+export const deleteFlow = async (id: string, userId: string): Promise<void> => {
+  if (!userId) throw new Error("User ID is required");
+
+  await FlowService.deleteFlow(id, userId);
+  // Update cache
+  delete cachedFlows[userId];
 };

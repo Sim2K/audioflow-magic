@@ -5,6 +5,8 @@ import { FlowList } from "./FlowList";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getAPIConnection } from "@/modules/api-connect/utils/storage";
+import { useEffect, useState } from "react";
+import { APIConnection } from "@/modules/api-connect/types/api-connect";
 
 interface FlowBoardProps {
   flows: Flow[];
@@ -27,8 +29,19 @@ export function FlowBoard({
   selectedFlow,
   isMobileView,
 }: FlowBoardProps) {
-  // Get API connection details if a flow is selected
-  const apiConnection = selectedFlow ? getAPIConnection(selectedFlow.id) : null;
+  const [apiConnection, setApiConnection] = useState<APIConnection | null>(null);
+
+  useEffect(() => {
+    async function fetchAPIConnection() {
+      if (selectedFlow) {
+        const connection = await getAPIConnection(selectedFlow.id);
+        setApiConnection(connection);
+      } else {
+        setApiConnection(null);
+      }
+    }
+    fetchAPIConnection();
+  }, [selectedFlow]);
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
@@ -122,10 +135,12 @@ export function FlowBoard({
 
                   {/* Flow Details */}
                   <div className="space-y-3 mt-4">
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Endpoint</h3>
-                      <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                        {selectedFlow.endpoint}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-sm font-medium mb-2">Name</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedFlow.name}
+                        </p>
                       </div>
                     </div>
 
