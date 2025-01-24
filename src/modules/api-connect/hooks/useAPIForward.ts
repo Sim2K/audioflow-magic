@@ -28,7 +28,7 @@ export function useAPIForward() {
       return result;
     } catch (error) {
       console.error('Error forwarding to API:', error);
-      const errorResult = {
+      const errorResult: APIForwardResult = {
         status: 'error',
         error: error instanceof Error ? error.message : 'Unknown error occurred',
         timestamp: new Date().toISOString(),

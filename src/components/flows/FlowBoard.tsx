@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { getAPIConnection } from "@/modules/api-connect/utils/storage";
 import { useEffect, useState } from "react";
 import { APIConnection } from "@/modules/api-connect/types/api-connect";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FlowBoardProps {
   flows: Flow[];
@@ -30,18 +31,19 @@ export function FlowBoard({
   isMobileView,
 }: FlowBoardProps) {
   const [apiConnection, setApiConnection] = useState<APIConnection | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     async function fetchAPIConnection() {
-      if (selectedFlow) {
-        const connection = await getAPIConnection(selectedFlow.id);
+      if (selectedFlow && user) {
+        const connection = await getAPIConnection(selectedFlow.id, user.id);
         setApiConnection(connection);
       } else {
         setApiConnection(null);
       }
     }
     fetchAPIConnection();
-  }, [selectedFlow]);
+  }, [selectedFlow, user]);
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
