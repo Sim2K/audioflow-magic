@@ -84,14 +84,14 @@ export function AppSidebar() {
       
       {/* Navigation - Scrollable */}
       <div className="flex-1 overflow-y-auto">
-        <nav className="p-2 space-y-2">
+        <nav className="p-2 space-y-3">
           {menuItems.map(({ to, icon: Icon, label, bgColor }) => (
             <NavLink key={to} to={to} onClick={handleNavClick}>
               {({ isActive }) => (
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full h-12 px-3",
+                    "w-full h-12 px-3 mb-3",
                     "hover:bg-accent hover:text-accent-foreground",
                     "transition-all duration-200",
                     isActive && "bg-accent/50 text-accent-foreground font-medium",
@@ -105,7 +105,8 @@ export function AppSidebar() {
                   )}>
                     <div className={cn(
                       "w-8 h-8 rounded-lg flex items-center justify-center",
-                      isActive ? bgColor || "bg-accent" : "bg-accent/30"
+                      isActive ? bgColor || "bg-accent" : "bg-accent/30",
+                      "transition-colors duration-200"
                     )}>
                       <Icon className="h-4 w-4 text-white" />
                     </div>
@@ -120,11 +121,11 @@ export function AppSidebar() {
 
       {/* Footer - Sticky */}
       <div className="flex-shrink-0 border-t bg-background">
-        <div className="p-4">
+        <div className="p-4 space-y-3">
           <a 
             href="https://gpts4u.com/aiaudioflows" 
             target="_blank" 
-            className="block mb-4"
+            className="block"
             onClick={handleNavClick}
           >
             <Button
@@ -152,32 +153,56 @@ export function AppSidebar() {
             </Button>
           </a>
 
-          <div className={cn(
-            "flex items-center",
-            !showLabels ? "justify-center" : "gap-3 px-2"
-          )}>
-            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
-              <User className="h-4 w-4" />
-            </div>
-            {showLabels && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">User Account</p>
-                <p className="text-xs text-muted-foreground truncate">user@example.com</p>
-              </div>
-            )}
-          </div>
-          <button
-            onClick={handleSignOut}
+          <Button
+            variant="ghost"
             className={cn(
-              "w-full flex items-center px-2 py-2 text-sm font-medium rounded-md",
-              "text-red-600 hover:bg-red-50 hover:text-red-700",
-              "dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300",
-              "transition-colors duration-200"
+              "w-full h-12 px-3",
+              "hover:bg-accent hover:text-accent-foreground",
+              "transition-all duration-200",
+              !showLabels ? "justify-center" : "justify-start",
+              "rounded-xl"
             )}
           >
-            <LogOut className={cn("h-5 w-5", showLabels ? "mr-3" : "")} />
-            {showLabels && <span>Sign Out</span>}
-          </button>
+            <div className={cn(
+              "flex items-center",
+              showLabels ? "gap-3" : "justify-center"
+            )}>
+              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                <User className="h-4 w-4" />
+              </div>
+              {showLabels && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">User Account</p>
+                  <p className="text-xs text-muted-foreground truncate">user@example.com</p>
+                </div>
+              )}
+            </div>
+          </Button>
+
+          <Button
+            onClick={handleSignOut}
+            variant="ghost"
+            className={cn(
+              "w-full h-12 px-3",
+              "hover:bg-destructive/10 hover:text-destructive",
+              "transition-all duration-200",
+              !showLabels ? "justify-center" : "justify-start",
+              "rounded-xl"
+            )}
+          >
+            <div className={cn(
+              "flex items-center",
+              showLabels ? "gap-3" : "justify-center"
+            )}>
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                "bg-destructive/20"
+              )}>
+                <LogOut className="h-4 w-4 text-destructive" />
+              </div>
+              {showLabels && <span className="text-destructive">Sign Out</span>}
+            </div>
+          </Button>
         </div>
       </div>
     </Sidebar>

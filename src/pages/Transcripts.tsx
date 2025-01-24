@@ -144,23 +144,23 @@ const Transcripts = () => {
                         <div
                           key={t.id}
                           className={cn(
-                            "flex items-center gap-2 p-3 rounded-lg hover:bg-accent cursor-pointer",
-                            selectedTranscript?.id === t.id && "bg-accent"
+                            "flex items-start gap-2 p-3 rounded-lg hover:bg-accent cursor-pointer overflow-hidden",
+                            selectedTranscript?.id === t.id ? "bg-primary/10" : "hover:bg-accent/30"
                           )}
                           onClick={() => setSelectedTranscript(t)}
                         >
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
                               {t.storageType === 'cloud' ? (
-                                <CloudIcon className="w-4 h-4 text-muted-foreground" />
+                                <CloudIcon className="w-4 h-4 flex-shrink-0 text-primary" />
                               ) : (
-                                <HardDriveIcon className="w-4 h-4 text-muted-foreground" />
+                                <HardDriveIcon className="w-4 h-4 flex-shrink-0 text-primary" />
                               )}
-                              <span className="font-medium">
+                              <span className="font-medium truncate text-foreground">
                                 {t.response?.theFlowTitle || t.flowName || new Date(t.timestamp).toLocaleString()}
                               </span>
                             </div>
-                            <p className="text-sm text-muted-foreground truncate">
+                            <p className="text-sm text-muted-foreground/80 line-clamp-2">
                               {t.transcript}
                             </p>
                           </div>
