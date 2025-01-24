@@ -87,7 +87,7 @@ const Transcripts = () => {
                 <CardHeader className="bg-background">
                   <CardTitle>Transcript History</CardTitle>
                   <CardDescription>
-                    Select a transcript to view details
+                    Please select a transcript to view details
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -271,7 +271,7 @@ const Transcripts = () => {
                 <div className="h-full flex flex-col items-center justify-center text-center p-8">
                   <h2 className="text-2xl font-semibold text-muted-foreground mb-2">No Transcript Selected</h2>
                   <p className="text-sm text-muted-foreground">
-                    Select a transcript from the list to view its details
+                    Please select a transcript from the list to view its details
                   </p>
                 </div>
               )}
