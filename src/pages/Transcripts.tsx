@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -7,12 +7,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { ChevronLeft, Trash2, CloudIcon, HardDriveIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import JsonViewer from "@/components/JsonViewer";
 import { CopyButton } from "@/components/ui/copy-button";
 import { APIResponseCard } from "@/modules/api-connect/components/APIResponseCard";
 import { cn } from "@/lib/utils";
+import { TranscriptService } from "@/services/transcriptService";
+import { transcriptStorageService, LocalTranscript } from "@/services/transcriptStorageService";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Transcript {
   id: string;
@@ -23,17 +27,60 @@ interface Transcript {
   response: any;
   audioUrl?: string;
   apiForwardResult: any;
+  storageType: 'local' | 'cloud';
 }
 
 const Transcripts = () => {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [selectedTranscript, setSelectedTranscript] = useState<Transcript | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const savedTranscripts = JSON.parse(localStorage.getItem("transcripts") || "[]");
-    setTranscripts(savedTranscripts.reverse()); // Show newest first
-  }, []);
+    const loadTranscripts = async () => {
+      try {
+        // Get local transcripts and ensure they match Transcript interface
+        const localTranscripts = transcriptStorageService.getLocalTranscripts().map(t => ({
+          ...t,
+          apiForwardResult: t.apiForwardResult || {},
+          storageType: 'local' as const
+        }));
+        
+        // Get cloud transcripts if user is logged in
+        let cloudTranscripts: Transcript[] = [];
+        if (user) {
+          const supabaseTranscripts = await TranscriptService.getTranscripts(user.id);
+          cloudTranscripts = supabaseTranscripts.map(t => ({
+            id: t.id?.toString() || '',
+            timestamp: t.created_at || t.timestamp || new Date().toISOString(),
+            flowId: t.flow_id,
+            flowName: t.flow_name || '',
+            transcript: t.transcript,
+            response: t.response,
+            audioUrl: t.audio_url || undefined,
+            apiForwardResult: t.api_forward_result || {},
+            storageType: 'cloud' as const
+          }));
+        }
+
+        // Combine and sort by timestamp
+        const allTranscripts = [...localTranscripts, ...cloudTranscripts]
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        setTranscripts(allTranscripts);
+      } catch (error) {
+        console.error('Error loading transcripts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load some transcripts.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadTranscripts();
+  }, [user]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -102,12 +149,19 @@ const Transcripts = () => {
                           )}
                           onClick={() => setSelectedTranscript(t)}
                         >
-                          <div className="flex-1 min-w-0 mr-2">
-                            <h3 className="text-sm font-medium break-words md:truncate">
-                              {getTranscriptTitle(t)}
-                            </h3>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(t.timestamp).toLocaleString()}
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              {t.storageType === 'cloud' ? (
+                                <CloudIcon className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <HardDriveIcon className="w-4 h-4 text-muted-foreground" />
+                              )}
+                              <span className="font-medium">
+                                {t.response?.theFlowTitle || t.flowName || new Date(t.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {t.transcript}
                             </p>
                           </div>
                           <Button

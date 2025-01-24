@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mic, Square } from "lucide-react";
+import { Mic, Square, CloudIcon, HardDriveIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getFlows } from "@/utils/flowManager";
 import { Flow } from "@/utils/storage";
@@ -24,7 +24,9 @@ import { useAPIForward } from "@/modules/api-connect/hooks/useAPIForward";
 import { APIResponseCard } from "@/modules/api-connect/components/APIResponseCard";
 import { AudioPreview } from "@/components/recorder/AudioPreview";
 import { useAuth } from "@/hooks/useAuth"; 
-import { TranscriptService } from "@/services/transcriptService"; // Fix useAuth import path
+import { TranscriptService } from "@/services/transcriptService"; 
+import { transcriptStorageSettings } from "@/modules/settings/transcriptStorageSettings";
+import { transcriptStorageService } from "@/services/transcriptStorageService"; 
 
 const audioRecorder = new AudioRecorder();
 
@@ -87,57 +89,15 @@ const Index = () => {
       // Forward to external API if connection exists
       const forwardResult = await forwardResponse(selectedFlow, processedResponse);
 
-      // Save to Supabase
-      try {
-        await TranscriptService.createTranscript({
-          user_id: user.id,
-          flow_id: selectedFlow.id,
-          transcript: transcript,
-          response: processedResponse || {}, // Ensure it's an object
-          audio_url: audioUrl,
-          api_forward_result: forwardResult || {} // Ensure it's an object
-        });
-      } catch (error) {
-        console.error('Error saving to Supabase:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save transcript to database.",
-          variant: "destructive",
-        });
-      }
-
-      // Save to localStorage for transcript history (keeping this for backwards compatibility)
-      let transcriptHistory;
-      try {
-        transcriptHistory = JSON.parse(
-          localStorage.getItem("transcripts") || "[]"
-        );
-      } catch (error) {
-        console.error('Error parsing transcript history:', error);
-        transcriptHistory = [];
-      }
-
-      transcriptHistory.push({
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        flowId: selectedFlow.id,
-        flowName: selectedFlow.name,
-        transcript,
+      // Save transcript using storage service
+      await transcriptStorageService.saveTranscript({
+        user_id: user.id,
+        flow_id: selectedFlow.id,
+        transcript: transcript,
         response: processedResponse,
-        audioUrl: audioUrl,
-        apiForwardResult: forwardResult
-      });
-
-      try {
-        localStorage.setItem("transcripts", JSON.stringify(transcriptHistory));
-      } catch (error) {
-        console.error('Error saving transcript history:', error);
-        toast({
-          title: "Warning",
-          description: "Could not save transcript to local history.",
-          variant: "destructive",
-        });
-      }
+        audio_url: audioUrl,
+        api_forward_result: forwardResult
+      }, selectedFlow.name);
 
       toast({
         title: "Processing completed",
@@ -253,23 +213,39 @@ const Index = () => {
             ) : (
               <>
                 <div className="flex flex-col space-y-2">
-                  <Select
-                    value={selectedFlow?.id || ""}
-                    onValueChange={(value) =>
-                      setSelectedFlow(flows.find((f) => f.id === value) || null)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a flow" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {flows.map((flow) => (
-                        <SelectItem key={flow.id} value={flow.id}>
-                          {flow.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-1">
+                      <Select
+                        value={selectedFlow?.id || ""}
+                        onValueChange={(value) =>
+                          setSelectedFlow(flows.find((f) => f.id === value) || null)
+                        }
+                        disabled={isLoadingFlows || isRecording}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a flow" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {flows.map((flow) => (
+                            <SelectItem key={flow.id} value={flow.id}>
+                              {flow.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div 
+                      className="flex items-center space-x-2 cursor-pointer hover:text-primary"
+                      onClick={() => window.location.href = '/settings'}
+                      title={`Transcripts are being saved ${transcriptStorageSettings.isCloudStorage() ? 'to the cloud' : 'locally'}. Click to change in settings.`}
+                    >
+                      {transcriptStorageSettings.isCloudStorage() ? (
+                        <CloudIcon className="w-5 h-5" />
+                      ) : (
+                        <HardDriveIcon className="w-5 h-5" />
+                      )}
+                    </div>
+                  </div>
 
                   {selectedFlow?.instructions && (
                     <Card className="bg-muted">
