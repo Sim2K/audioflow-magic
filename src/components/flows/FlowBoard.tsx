@@ -1,6 +1,6 @@
 import { Flow } from "@/utils/storage";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, Pencil, Sparkles, Link2 } from "lucide-react";
+import { Plus, ChevronLeft, Pencil, Sparkles, Link2, MessageSquare } from "lucide-react";
 import { FlowList } from "./FlowList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { getAPIConnection } from "@/modules/api-connect/utils/storage";
 import { useEffect, useState } from "react";
 import { APIConnection, APIHeader } from "@/modules/api-connect/types/api-connect";
 import { useAuth } from "@/hooks/useAuth";
+import { FlowChatButton } from "@/modules/flowchat";
 
 interface FlowBoardProps {
   flows: Flow[];
@@ -16,6 +17,7 @@ interface FlowBoardProps {
   onEdit: (flow: Flow) => void;
   onDelete: (id: string) => void;
   onAPIConnect: (flow: Flow) => void;
+  onFlowChat: (flow: Flow) => void;
   selectedFlow: Flow | null;
   isMobileView: boolean;
 }
@@ -27,6 +29,7 @@ export function FlowBoard({
   onEdit,
   onDelete,
   onAPIConnect,
+  onFlowChat,
   selectedFlow,
   isMobileView,
 }: FlowBoardProps) {
@@ -108,12 +111,46 @@ export function FlowBoard({
                   )}
                   <Card>
                     <CardHeader>
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-wrap gap-2 sm:hidden">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onFlowChat(selectedFlow)}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Flow Chat
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onAPIConnect(selectedFlow)}
+                          >
+                            <Link2 className="h-4 w-4 mr-2" />
+                            API Connect
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEdit(selectedFlow)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit Flow
+                          </Button>
+                        </div>
                         <div>
                           <CardTitle>{selectedFlow.name}</CardTitle>
                           <CardDescription>{selectedFlow.instructions || "No description"}</CardDescription>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="hidden sm:flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onFlowChat(selectedFlow)}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Flow Chat
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"

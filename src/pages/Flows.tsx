@@ -8,6 +8,7 @@ import { APIConnectButton } from "@/modules/api-connect/components/APIConnectBut
 import { APIConnectForm } from "@/modules/api-connect/components/APIConnectForm";
 import { APIConnection } from "@/modules/api-connect/types/api-connect";
 import { useAuth } from "@/hooks/useAuth";
+import { FlowChatDialog } from "@/modules/flowchat";
 
 const Flows = () => {
   const [flows, setFlows] = useState<Flow[]>([]);
@@ -15,6 +16,7 @@ const Flows = () => {
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isAPIConnectOpen, setIsAPIConnectOpen] = useState(false);
+  const [isFlowChatOpen, setIsFlowChatOpen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -122,6 +124,48 @@ const Flows = () => {
     setIsAPIConnectOpen(false);
   };
 
+  const handleFlowChat = (flow: Flow) => {
+    console.log('Opening Flow Chat dialog for flow:', flow);
+    setSelectedFlow(flow);
+    setIsFlowChatOpen(true);
+  };
+
+  const handleCloseFlowChat = () => {
+    console.log('Closing Flow Chat dialog');
+    setIsFlowChatOpen(false);
+  };
+
+  const handleSaveFlowDetails = async (updatedDetails: any) => {
+    if (!selectedFlow || !user) return;
+    
+    try {
+      const updatedFlow = {
+        ...selectedFlow,
+        ...updatedDetails,
+        id: selectedFlow.id  // Ensure we keep the same ID
+      };
+      
+      await saveFlow(updatedFlow, user.id, selectedFlow.id);
+      const updatedFlows = await getFlows(user.id);
+      setFlows(updatedFlows);
+      setSelectedFlow(updatedFlow);
+      
+      toast({
+        title: "Success",
+        description: "Flow updated successfully"
+      });
+      
+      setIsFlowChatOpen(false);
+    } catch (error) {
+      console.error('Error updating flow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update flow",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto py-6">
       {!user ? (
@@ -144,6 +188,7 @@ const Flows = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onAPIConnect={handleAPIConnect}
+            onFlowChat={handleFlowChat}
             selectedFlow={selectedFlow}
             isMobileView={isMobileView}
           />
@@ -156,12 +201,20 @@ const Flows = () => {
           />
 
           {selectedFlow && (
-            <APIConnectForm
-              key={selectedFlow.id}
-              flow={selectedFlow}
-              isOpen={isAPIConnectOpen}
-              onClose={handleCloseAPIConnect}
-            />
+            <>
+              <APIConnectForm
+                key={selectedFlow.id}
+                flow={selectedFlow}
+                isOpen={isAPIConnectOpen}
+                onClose={handleCloseAPIConnect}
+              />
+              <FlowChatDialog
+                isOpen={isFlowChatOpen}
+                onClose={handleCloseFlowChat}
+                flowDetails={selectedFlow}
+                onSave={handleSaveFlowDetails}
+              />
+            </>
           )}
         </>
       )}
