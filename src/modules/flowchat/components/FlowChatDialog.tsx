@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch"; 
 import { FlowChatDialogProps } from '../types';
-import ChatSection from './ChatSection';
+import { ChatSection } from './ChatSection';
 import FlowDetailsSection from './FlowDetailsSection';
 import { cn } from "@/lib/utils";
+import { ChatManager } from '../services/chatManager';
 
 export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
   isOpen,
@@ -33,9 +34,24 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
     onClose();
   };
 
-  const handleMessage = (message: string) => {
-    // Here you can implement the chat message handling logic
-    console.log('Chat message:', message);
+  const handleMessage = async (message: string) => {
+    try {
+      const chatManager = ChatManager.getInstance();
+      const response = await chatManager.sendMessage(message);
+      
+      if (response?.FlowData) {
+        const updatedDetails = {
+          ...details,
+          name: response.FlowData.Name?.value || details.name,
+          instructions: response.FlowData.Instructions?.value || details.instructions,
+          promptTemplate: response.FlowData.PromptTemplate?.value || details.promptTemplate,
+          formatTemplate: response.FlowData.FormatTemplate?.value || details.formatTemplate
+        };
+        setDetails(updatedDetails);
+      }
+    } catch (error) {
+      console.error('Error handling message:', error);
+    }
   };
 
   return (
@@ -50,23 +66,21 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
             <Switch
               checked={showChat}
               onCheckedChange={setShowChat}
-              aria-label="Toggle view"
             />
           </div>
         </DialogHeader>
         
-        <div className="grid md:grid-cols-2 gap-4 h-[500px]">
+        <div className="flex gap-4 h-[60vh]">
           <div className={cn(
-            "h-full",
-            "md:block md:border-r md:pr-4",
-            !showChat && "hidden"
+            "flex-1 transition-all",
+            !showChat && "hidden md:block"
           )}>
             <ChatSection onSendMessage={handleMessage} />
           </div>
+          
           <div className={cn(
-            "h-full",
-            "md:block md:pl-4",
-            showChat && "hidden"
+            "w-1/3 transition-all",
+            showChat && "hidden md:block"
           )}>
             <FlowDetailsSection
               details={details}
@@ -75,22 +89,13 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <div className="w-full grid md:flex md:justify-end gap-2 grid-cols-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="w-full md:w-auto"
-            >
-              Close
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="w-full md:w-auto"
-            >
-              Save
-            </Button>
-          </div>
+        <DialogFooter className="flex justify-between">
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+          <Button onClick={handleSave}>
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
