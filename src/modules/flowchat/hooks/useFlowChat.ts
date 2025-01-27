@@ -1,27 +1,22 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage } from '../types';
+import { FlowDetails } from '../types';
 
-export const useFlowChat = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export const useFlowChat = (initialFlow?: FlowDetails) => {
+  const [flowDetails, setFlowDetails] = useState<FlowDetails | undefined>(initialFlow);
 
-  const addMessage = useCallback((content: string, sender: 'user' | 'system') => {
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content,
-      timestamp: new Date(),
-      sender
-    };
-    setMessages(prev => [...prev, newMessage]);
+  const updateFlow = useCallback((updatedFlow: FlowDetails) => {
+    setFlowDetails(updatedFlow);
   }, []);
 
-  const clearMessages = useCallback(() => {
-    setMessages([]);
+  const handleMessage = useCallback(async (message: string) => {
+    console.log('Message received:', message);
+    // Message handling will be implemented by the parent component
   }, []);
 
   return {
-    messages,
-    addMessage,
-    clearMessages
+    flowDetails,
+    updateFlow,
+    handleMessage
   };
 };
 

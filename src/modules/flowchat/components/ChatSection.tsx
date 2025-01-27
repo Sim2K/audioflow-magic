@@ -1,75 +1,39 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
-import { useChat } from '../hooks/useChat';
-import { ChatMessage } from '../types/chat';
+import { Message, ChatProps } from '../types';
 
-interface DisplayMessage {
-  id: string;
-  content: string;
-  timestamp: Date;
-  sender: 'user' | 'assistant' | 'system';
-}
-
-interface ChatSectionProps {
-  onSendMessage?: (message: string) => void;
-}
-
-export const ChatSection: React.FC<ChatSectionProps> = ({ onSendMessage }) => {
+const ChatSection: React.FC<ChatProps> = ({ onSendMessage }) => {
   const [inputMessage, setInputMessage] = useState('');
-  const { messages, sendMessage, isLoading } = useChat();
-  const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const formattedMessages = messages.map((msg, index) => {
-      let content = msg.content;
-      if (msg.role === 'assistant') {
-        try {
-          const parsed = JSON.parse(msg.content);
-          content = parsed.ChatMSGs?.content || 'No content available';
-        } catch (error) {
-          console.error('Error parsing assistant message:', error);
-          content = 'Error displaying message';
-        }
-      }
-
-      return {
-        id: index.toString(),
-        content,
-        timestamp: new Date(),
-        sender: msg.role
-      };
-    });
-
-    setDisplayMessages(formattedMessages);
-
-    // Scroll to bottom after messages update
-    if (scrollAreaRef.current) {
-      const scrollArea = scrollAreaRef.current;
-      setTimeout(() => {
-        scrollArea.scrollTop = scrollArea.scrollHeight;
-      }, 100);
-    }
-  }, [messages]);
 
   const handleSend = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
-    const messageToSend = inputMessage;
-    setInputMessage(''); // Clear input immediately for better UX
+    const messageToSend = inputMessage.trim();
+    setInputMessage('');
 
-    try {
-      if (onSendMessage) {
-        onSendMessage(messageToSend);
-      }
-      
-      await sendMessage(messageToSend);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Could add toast notification here for error feedback
+    const newMessage: Message = {
+      id: `user-${Date.now()}`,
+      content: messageToSend,
+      timestamp: new Date(),
+      sender: 'user'
+    };
+
+    setMessages(prev => [...prev, newMessage]);
+
+    if (onSendMessage) {
+      onSendMessage(messageToSend);
+    }
+
+    // Scroll to bottom
+    if (scrollAreaRef.current) {
+      const scrollArea = scrollAreaRef.current;
+      scrollArea.scrollTop = scrollArea.scrollHeight;
     }
   };
 
@@ -87,18 +51,16 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ onSendMessage }) => {
         className="flex-1 mb-4 p-4 bg-muted rounded-lg"
       >
         <div className="space-y-4">
-          {displayMessages.map((msg) => (
+          {messages.map((msg) => (
             <div
               key={msg.id}
               className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
+                className={`max-w-[80%] rounded-lg p-3 whitespace-pre-wrap ${
                   msg.sender === 'user'
                     ? 'bg-primary text-primary-foreground'
-                    : msg.sender === 'assistant'
-                    ? 'bg-secondary'
-                    : 'bg-muted text-muted-foreground text-sm'
+                    : 'bg-secondary'
                 }`}
               >
                 {msg.content}
@@ -107,26 +69,26 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ onSendMessage }) => {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[80%] bg-secondary rounded-lg p-3">
+              <div className="max-w-[80%] rounded-lg p-3 bg-secondary animate-pulse">
                 Thinking...
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
+
       <div className="flex gap-2">
         <Textarea
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
           placeholder="Type your message..."
-          className="min-h-[60px]"
+          className="flex-1"
           disabled={isLoading}
         />
         <Button 
-          onClick={handleSend} 
-          disabled={!inputMessage.trim() || isLoading}
-          className="px-3"
+          onClick={handleSend}
+          disabled={isLoading || !inputMessage.trim()}
         >
           <Send className="h-4 w-4" />
         </Button>

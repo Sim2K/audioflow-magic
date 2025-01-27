@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
-import FlowChatDialog from './FlowChatDialog';
+import { FlowChatDialog } from './FlowChatDialog';
+import { FlowDetails } from '../types';
 
 interface FlowChatButtonProps {
-  flowDetails: any;
-  onFlowUpdate: (details: any) => void;
+  flowDetails: FlowDetails;
+  onFlowUpdate: (details: FlowDetails) => void;
 }
 
 export const FlowChatButton: React.FC<FlowChatButtonProps> = ({

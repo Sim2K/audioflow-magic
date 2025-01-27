@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch"; 
-import { FlowChatDialogProps } from '../types';
-import { ChatSection } from './ChatSection';
+import ChatSection from './ChatSection';
 import FlowDetailsSection from './FlowDetailsSection';
 import { cn } from "@/lib/utils";
-import { ChatManager } from '../services/chatManager';
+import { FlowChatDialogProps } from '../types';
 
 export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
   isOpen,
@@ -35,30 +34,18 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
   };
 
   const handleMessage = async (message: string) => {
-    try {
-      const chatManager = ChatManager.getInstance();
-      const response = await chatManager.sendMessage(message);
-      
-      if (response?.FlowData) {
-        const updatedDetails = {
-          ...details,
-          name: response.FlowData.Name?.value || details.name,
-          instructions: response.FlowData.Instructions?.value || details.instructions,
-          promptTemplate: response.FlowData.PromptTemplate?.value || details.promptTemplate,
-          formatTemplate: response.FlowData.FormatTemplate?.value || details.formatTemplate
-        };
-        setDetails(updatedDetails);
-      }
-    } catch (error) {
-      console.error('Error handling message:', error);
-    }
+    // Message handling will be implemented by parent component
+    console.log('Message received:', message);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[75vw] w-full">
+      <DialogContent className="max-w-4xl h-[80vh]" aria-describedby="flow-chat-description">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle>Flow Chat</DialogTitle>
+          <p id="flow-chat-description" className="text-sm text-muted-foreground">
+            Configure your audio flow settings
+          </p>
           <div className="md:hidden flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {showChat ? 'Chat' : 'Settings'}
@@ -101,5 +88,3 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
     </Dialog>
   );
 };
-
-export default FlowChatDialog;
