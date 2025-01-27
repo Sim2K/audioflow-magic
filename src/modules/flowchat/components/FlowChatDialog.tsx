@@ -56,7 +56,7 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl h-[80vh]" aria-describedby="flow-chat-description">
+      <DialogContent className="w-[80vw] max-w-[60vw] h-[80vh]" aria-describedby="flow-chat-description">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle>Flow Chat</DialogTitle>
           <p id="flow-chat-description" className="text-sm text-muted-foreground">
