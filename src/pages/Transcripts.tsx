@@ -91,12 +91,30 @@ const Transcripts = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const deleteTranscript = (id: string) => {
-    const updatedTranscripts = transcripts.filter((t) => t.id !== id);
-    localStorage.setItem("transcripts", JSON.stringify(updatedTranscripts));
-    setTranscripts(updatedTranscripts);
-    if (selectedTranscript?.id === id) {
-      setSelectedTranscript(null);
+  const deleteTranscript = async (transcript: Transcript) => {
+    try {
+      if (transcript.storageType === 'cloud' && user) {
+        await TranscriptService.deleteTranscript(transcript.id, user.id);
+      } else {
+        transcriptStorageService.deleteLocalTranscript(transcript.id);
+      }
+
+      setTranscripts(transcripts.filter(t => t.id !== transcript.id));
+      if (selectedTranscript?.id === transcript.id) {
+        setSelectedTranscript(null);
+      }
+
+      toast({
+        title: "Success",
+        description: "Transcript deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting transcript:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete transcript",
+        variant: "destructive",
+      });
     }
   };
 
@@ -170,7 +188,7 @@ const Transcripts = () => {
                             className="flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteTranscript(t.id);
+                              deleteTranscript(t);
                             }}
                           >
                             <Trash2 className="h-4 w-4" />

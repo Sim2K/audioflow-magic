@@ -200,43 +200,32 @@ export function FlowBoard({
                           </div>
                         </div>
 
-                        <div>
-                          <h3 className="font-medium mb-1">API Connection</h3>
-                          <div className="bg-muted rounded-lg p-3 space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span>Method:</span>
-                              <span className="text-right">{apiConnection?.method || 'POST'}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>URL:</span>
-                              <span className="text-right break-all">{apiConnection?.url || 'https://zzazz.free.beeceptor.com/todo'}</span>
-                            </div>
-                            <div>
-                              <div className="mb-1">Headers:</div>
-                              <div className="space-y-1">
-                                {apiConnection?.headers ? (
-                                  apiConnection.headers.map((header, index) => (
+                        {apiConnection && (
+                          <div>
+                            <h3 className="font-medium mb-1">API Connection</h3>
+                            <div className="bg-muted rounded-lg p-3 space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span>Method:</span>
+                                <span className="text-right">{apiConnection.method}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span>URL:</span>
+                                <span className="text-right break-all">{apiConnection.url}</span>
+                              </div>
+                              <div>
+                                <div className="mb-1">Headers:</div>
+                                <div className="space-y-1">
+                                  {apiConnection.headers.map((header, index) => (
                                     <div key={index} className="flex justify-between items-center">
                                       <span>{header.key}:</span>
                                       <span className="text-right">{header.value}</span>
                                     </div>
-                                  ))
-                                ) : (
-                                  <>
-                                    <div className="flex justify-between items-center">
-                                      <span>some-header:</span>
-                                      <span className="text-right">value</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                      <span>some-header2:</span>
-                                      <span className="text-right">value2</span>
-                                    </div>
-                                  </>
-                                )}
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

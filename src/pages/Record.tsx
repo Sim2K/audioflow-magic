@@ -96,7 +96,7 @@ const Index = () => {
         transcript: transcript,
         response: processedResponse,
         audio_url: audioUrl,
-        api_forward_result: forwardResult
+        api_forward_result: forwardResult || undefined
       }, selectedFlow.name);
 
       toast({

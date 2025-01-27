@@ -15,11 +15,10 @@ export interface Transcript {
 
 export class TranscriptService {
   static async createTranscript(transcript: Omit<Transcript, 'id' | 'timestamp' | 'created_at' | 'updated_at'>) {
-    // Ensure response and api_forward_result are objects, not null
+    // Ensure response is an object, not null
     const data = {
       ...transcript,
       response: transcript.response || {},
-      api_forward_result: transcript.api_forward_result || {}
     };
 
     const { data: result, error } = await supabase
@@ -48,5 +47,17 @@ export class TranscriptService {
     }
 
     return data;
+  }
+
+  static async deleteTranscript(id: string, userId: string) {
+    const { error } = await supabase
+      .from('transcripts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Error deleting transcript: ${error.message}`);
+    }
   }
 }

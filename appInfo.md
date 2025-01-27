@@ -466,3 +466,54 @@ CREATE TRIGGER update_transcripts_updated_at
 
 -- Add comment
 COMMENT ON TABLE transcripts IS 'Stores user transcripts with their associated flows and responses';
+```
+
+## Flows
+```sql
+create table public.flows (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  name character varying(255) not null,
+  prompt text not null,
+  instructions text null,
+  created_at timestamp with time zone not null default timezone ('utc'::text, now()),
+  updated_at timestamp with time zone not null default timezone ('utc'::text, now()),
+  format_template jsonb null,
+  constraint flows_pkey primary key (id),
+  constraint flows_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists flows_user_id_idx on public.flows using btree (user_id) TABLESPACE pg_default;
+
+create trigger update_flows_updated_at BEFORE
+update on flows for EACH row
+execute FUNCTION update_updated_at_column ();
+```
+
+## api-connections
+```sql
+create table public.api_connections (
+  id uuid not null default gen_random_uuid (),
+  flow_id uuid not null,
+  user_id uuid not null,
+  method public.http_method not null default 'POST'::http_method,
+  url text not null,
+  auth_type public.auth_type not null default 'None'::auth_type,
+  auth_token text null,
+  headers jsonb not null default '[]'::jsonb,
+  created_at timestamp with time zone not null default timezone ('utc'::text, now()),
+  updated_at timestamp with time zone not null default timezone ('utc'::text, now()),
+  constraint api_connections_pkey primary key (id),
+  constraint unique_flow_connection unique (flow_id),
+  constraint api_connections_flow_id_fkey foreign KEY (flow_id) references flows (id) on delete CASCADE,
+  constraint api_connections_user_id_fkey foreign KEY (user_id) references auth.users (id)
+) TABLESPACE pg_default;
+
+create index IF not exists api_connections_flow_id_idx on public.api_connections using btree (flow_id) TABLESPACE pg_default;
+
+create index IF not exists api_connections_user_id_idx on public.api_connections using btree (user_id) TABLESPACE pg_default;
+
+create trigger update_api_connections_updated_at BEFORE
+update on api_connections for EACH row
+execute FUNCTION update_updated_at_column ();
+```

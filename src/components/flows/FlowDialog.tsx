@@ -22,6 +22,8 @@ import { useForm } from "react-hook-form";
 import { Flow } from "@/utils/storage";
 import { useEffect, useState } from "react";
 import { ImportFlowDialog } from "./ImportFlowDialog";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface FlowDialogProps {
   open: boolean;
@@ -30,9 +32,29 @@ interface FlowDialogProps {
   editingFlow?: Flow;
 }
 
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  format: z.string().refine((val) => {
+    try {
+      JSON.parse(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, "Must be valid JSON"),
+  prompt: z.string().min(1, "Prompt is required"),
+  instructions: z.string(),
+});
+
 export const defaultValues = {
   name: "",
-  format: '{ "details": { "title": "", "summary": "", "valid_points": [] } }',
+  format: JSON.stringify({
+    details: {
+      title: "",
+      summary: "",
+      valid_points: []
+    }
+  }),
   prompt: "Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.",
   instructions: "",
 };
@@ -44,7 +66,9 @@ export function FlowDialog({
   editingFlow,
 }: FlowDialogProps) {
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const form = useForm<Omit<Flow, "id">>({
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: editingFlow || defaultValues,
   });
 
@@ -57,12 +81,28 @@ export function FlowDialog({
   }, [editingFlow, form]);
 
   const handleImport = (importedData: Partial<Flow>) => {
-    form.reset({
-      name: importedData.name || "",
-      instructions: importedData.instructions || "",
-      prompt: importedData.prompt || defaultValues.prompt,
-      format: importedData.format || defaultValues.format,
-    });
+    try {
+      // Validate format is proper JSON if provided
+      const format = importedData.format 
+        ? JSON.stringify(JSON.parse(importedData.format)) // Parse and re-stringify to validate
+        : defaultValues.format;
+
+      form.reset({
+        name: importedData.name || "",
+        instructions: importedData.instructions || "",
+        prompt: importedData.prompt || defaultValues.prompt,
+        format,
+      });
+    } catch (error) {
+      console.error('Invalid format in imported data:', error);
+      // Use default format if imported format is invalid
+      form.reset({
+        name: importedData.name || "",
+        instructions: importedData.instructions || "",
+        prompt: importedData.prompt || defaultValues.prompt,
+        format: defaultValues.format,
+      });
+    }
   };
 
   return (
@@ -100,20 +140,20 @@ export function FlowDialog({
               <FormField
                 control={form.control}
                 name="name"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
                       <Input placeholder="My Flow" {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
                 name="instructions"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem className="md:row-span-2">
                     <FormLabel>Instructions</FormLabel>
                     <FormControl>
@@ -126,14 +166,14 @@ export function FlowDialog({
                     <FormDescription>
                       Instructions for users on how to use this flow when recording
                     </FormDescription>
-                    <FormMessage />
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
                 name="prompt"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem className="md:col-span-2 mt-14">
                     <FormLabel>Prompt Template</FormLabel>
                     <FormControl>
@@ -145,14 +185,14 @@ export function FlowDialog({
                     <FormDescription>
                       Use {"{transcript}"} as placeholder for the transcript text
                     </FormDescription>
-                    <FormMessage />
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
                 name="format"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem className="md:col-span-2">
                     <FormLabel>Format Template</FormLabel>
                     <FormControl>
@@ -162,7 +202,7 @@ export function FlowDialog({
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />

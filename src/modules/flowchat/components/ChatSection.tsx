@@ -3,8 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
-import { Message, ChatProps } from '../types';
+import { Message } from '../types';
 import { ChatService } from '@/services/ChatService';
+
+interface ChatProps {
+  onSendMessage: (flowData: any) => void;
+  flowDetails?: any;
+  isOpen: boolean;
+}
 
 const SYSTEM_MESSAGE = 'SYSTEM_MESSAGE';
 

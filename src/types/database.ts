@@ -34,12 +34,21 @@ export const toFlow = (dbFlow: DBFlow): Flow => ({
   instructions: dbFlow.instructions || ''
 });
 
-export const toDBFlow = (flow: Omit<Flow, 'id'>): Omit<DBFlow, 'id' | 'user_id' | 'created_at' | 'updated_at'> => ({
-  name: flow.name,
-  format_template: JSON.parse(flow.format),
-  prompt: flow.prompt,
-  instructions: flow.instructions || null
-});
+export const toDBFlow = (flow: Omit<Flow, 'id'>): Omit<DBFlow, 'id' | 'user_id' | 'created_at' | 'updated_at'> => {
+  try {
+    // Try to parse the format string to validate it's proper JSON
+    const formatTemplate = JSON.parse(flow.format);
+    
+    return {
+      name: flow.name,
+      format_template: formatTemplate,
+      prompt: flow.prompt,
+      instructions: flow.instructions || null
+    };
+  } catch (error) {
+    throw new Error(`Invalid format template. Please ensure it is valid JSON. Error: ${error.message}`);
+  }
+};
 
 export const toAPIConnection = (dbConn: DBAPIConnection): APIConnection => ({
   flowId: dbConn.flow_id,

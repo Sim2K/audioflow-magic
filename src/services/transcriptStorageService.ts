@@ -60,5 +60,11 @@ export const transcriptStorageService = {
     } catch {
       return [];
     }
+  },
+
+  deleteLocalTranscript(id: string): void {
+    const transcripts = this.getLocalTranscripts();
+    const updatedTranscripts = transcripts.filter(t => t.id !== id);
+    localStorage.setItem("transcripts", JSON.stringify(updatedTranscripts));
   }
 };
