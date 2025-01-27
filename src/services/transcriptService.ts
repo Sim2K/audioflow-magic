@@ -21,6 +21,11 @@ export class TranscriptService {
       response: transcript.response || {},
     };
 
+    // Remove api_forward_result if it's null, undefined, or empty object
+    if (!data.api_forward_result || Object.keys(data.api_forward_result).length === 0) {
+      delete data.api_forward_result;
+    }
+
     const { data: result, error } = await supabase
       .from('transcripts')
       .insert([data])

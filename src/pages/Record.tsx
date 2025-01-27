@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { TranscriptService } from "@/services/transcriptService"; 
 import { transcriptStorageSettings } from "@/modules/settings/transcriptStorageSettings";
 import { transcriptStorageService } from "@/services/transcriptStorageService"; 
+import { getAPIConnection } from "@/modules/api-connect/utils/storage";
 
 const audioRecorder = new AudioRecorder();
 
@@ -86,8 +87,13 @@ const Index = () => {
       setTranscript(transcript);
       setResponse(processedResponse);
 
-      // Forward to external API if connection exists
-      const forwardResult = await forwardResponse(selectedFlow, processedResponse);
+      // Check for API connection before attempting to forward
+      const apiConnection = await getAPIConnection(selectedFlow.id, user.id);
+      let forwardResult = null;
+      if (apiConnection) {
+        // Forward to external API since connection exists
+        forwardResult = await forwardResponse(selectedFlow, processedResponse);
+      }
 
       // Save transcript using storage service
       await transcriptStorageService.saveTranscript({
