@@ -8,12 +8,6 @@ import { ChatService } from '@/services/ChatService';
 
 const SYSTEM_MESSAGE = 'SYSTEM_MESSAGE';
 
-interface ChatProps {
-  onSendMessage?: (flowData: any) => void;
-  flowDetails?: any;
-  isOpen: boolean;
-}
-
 const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen }) => {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);

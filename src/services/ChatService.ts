@@ -3,7 +3,7 @@ import { ChatMessage, ChatResponse } from '../types/chat';
 export class ChatService {
     private static instance: ChatService;
     private apiKey: string;
-    private readonly BASE_URL = 'https://api.deepseek.com/chat/completions';
+    private readonly BASE_URL = '/api/chat/chat/completions';  // Using proxied endpoint
 
     private constructor() {
         try {
@@ -38,9 +38,8 @@ export class ChatService {
     }
 
     private async makeAPIRequest(messages: ChatMessage[]): Promise<Response> {
-        const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
-        if (!apiKey) {
-            throw new Error('API key not found in environment variables');
+        if (!this.apiKey) {
+            throw new Error('API key not found');
         }
 
         const requestBody = {
@@ -54,29 +53,32 @@ export class ChatService {
 
         console.log('Making API request with body:', requestBody);
 
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify(requestBody)
-        });
+        try {
+            const response = await fetch(this.BASE_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiKey}`
+                },
+                body: JSON.stringify(requestBody)
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            console.error('API Error:', errorData);
-            throw new Error(`API request failed: ${response.status}`);
+            if (!response.ok) {
+                console.error('API request failed:', response.status, response.statusText);
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            return response;
+        } catch (error) {
+            console.error('Network request failed:', error);
+            throw error;
         }
-
-        return response;
     }
 
     public async createChatCompletion(messages: ChatMessage[]): Promise<any> {
+        console.log('Starting chat completion with messages:', messages);
         try {
-            console.log('Starting chat completion with messages:', messages);
-
-            // Ensure system message is first if not already present
+            // Check if there's already a system message
             const hasSystemMessage = messages.some(msg => msg.role === 'system');
             const finalMessages = hasSystemMessage ? messages : [this.SYSTEM_MESSAGE, ...messages];
 
