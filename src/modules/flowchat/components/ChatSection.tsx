@@ -1,39 +1,141 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
 import { Message, ChatProps } from '../types';
+import { ChatService } from '@/services/ChatService';
 
-const ChatSection: React.FC<ChatProps> = ({ onSendMessage }) => {
-  const [inputMessage, setInputMessage] = useState('');
+const SYSTEM_MESSAGE = 'SYSTEM_MESSAGE';
+
+interface ChatProps {
+  onSendMessage?: (flowData: any) => void;
+  flowDetails?: any;
+  isOpen: boolean;
+}
+
+const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen }) => {
+  const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Memoize chatService instance
+  const chatService = useMemo(() => ChatService.getInstance(), []);
+
+  useEffect(() => {
+    setIsLoading(false);
+    return () => setIsLoading(false);
+  }, []);
+
+  // Initialize welcome message only if no messages exist and dialog is open
+  useEffect(() => {
+    if (flowDetails && messages.length === 0 && isOpen) {
+      const welcomeMessage: Message = {
+        id: `system-${Date.now()}`,
+        content: `Hi, can you help me with my audio flow settings for "${flowDetails.name}". Here are the Flow details: 
+        
+Instructions:
+"${flowDetails.instructions}"
+        
+Prompt Template:
+"${flowDetails.prompt}"
+        
+Format Template:
+"${flowDetails.format}"
+
+I need to make some improvements to the flow. Please analyse it in painstaking detail to fully understand what it is about.`,
+        timestamp: new Date(),
+        sender: 'user'
+      };
+      setMessages([welcomeMessage]);
+
+      // Only send API request if dialog is open
+      chatService.createChatCompletion([{
+        role: 'user',
+        content: welcomeMessage.content
+      }]).then(response => {
+        if (response.ChatMSGs && isOpen) { // Check isOpen before updating state
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            content: response.ChatMSGs.content,
+            timestamp: new Date(),
+            sender: 'assistant'
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+          scrollToBottom();
+        }
+      }).catch(error => {
+        console.error('Error sending initial message:', error);
+      });
+    }
+  }, [flowDetails, chatService, messages.length, isOpen]);
+
+  // Scroll to bottom helper function
+  const scrollToBottom = () => {
+    if (scrollAreaRef.current) {
+      const scrollArea = scrollAreaRef.current;
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
+  };
+
+  // Auto-scroll on messages change or loading state change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
   const handleSend = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading) return;
 
-    const messageToSend = inputMessage.trim();
-    setInputMessage('');
+    const messageToSend = inputValue.trim();
+    setInputValue('');
 
-    const newMessage: Message = {
+    const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: messageToSend,
       timestamp: new Date(),
       sender: 'user'
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    // Update messages state with new user message
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setIsLoading(true);
 
-    if (onSendMessage) {
-      onSendMessage(messageToSend);
-    }
+    try {
+      // Convert all messages to API format, including previous assistant responses
+      const apiMessages = newMessages.map(msg => ({
+        role: msg.sender as 'user' | 'assistant',
+        content: msg.content
+      }));
 
-    // Scroll to bottom
-    if (scrollAreaRef.current) {
-      const scrollArea = scrollAreaRef.current;
-      scrollArea.scrollTop = scrollArea.scrollHeight;
+      console.log('Current messages:', newMessages);
+      console.log('Sending messages to API:', apiMessages);
+      
+      const response = await chatService.createChatCompletion(apiMessages);
+
+      if (response.ChatMSGs) {
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          content: response.ChatMSGs.content,
+          timestamp: new Date(),
+          sender: 'assistant'
+        };
+        
+        // Update messages with assistant response
+        setMessages(prevMessages => [...prevMessages, assistantMessage]);
+        scrollToBottom();
+
+        // Handle FlowData if present
+        if (response.FlowData && onSendMessage) {
+          onSendMessage(response.FlowData);
+        }
+      }
+    } catch (error) {
+      console.error('Error in chat:', error);
+      // Add error handling here if needed
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,8 +181,8 @@ const ChatSection: React.FC<ChatProps> = ({ onSendMessage }) => {
 
       <div className="flex gap-2">
         <Textarea
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyPress}
           placeholder="Type your message..."
           className="flex-1"
@@ -88,7 +190,7 @@ const ChatSection: React.FC<ChatProps> = ({ onSendMessage }) => {
         />
         <Button 
           onClick={handleSend}
-          disabled={isLoading || !inputMessage.trim()}
+          disabled={isLoading || !inputValue.trim()}
         >
           <Send className="h-4 w-4" />
         </Button>

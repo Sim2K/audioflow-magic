@@ -1,3 +1,5 @@
+import { FlowDataType } from '@/types/chat';
+
 export interface Message {
   id: string;
   content: string;
@@ -13,11 +15,6 @@ export interface FlowDetails {
   format: string;
 }
 
-export interface FlowDetailsProps {
-  details: FlowDetails;
-  onUpdate: (details: FlowDetails) => void;
-}
-
 export interface FlowChatDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,5 +23,11 @@ export interface FlowChatDialogProps {
 }
 
 export interface ChatProps {
-  onSendMessage?: (message: string) => void;
+  onSendMessage: (flowData: FlowDataType) => void;
+  flowDetails?: FlowDetails;
+}
+
+export interface FlowDetailsSectionProps {
+  details: FlowDetails;
+  onUpdate: (details: FlowDetails) => void;
 }
