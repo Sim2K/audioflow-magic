@@ -31,6 +31,7 @@ const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen }
   // Initialize welcome message only if no messages exist and dialog is open
   useEffect(() => {
     if (flowDetails && messages.length === 0 && isOpen) {
+      setIsLoading(true); // Show loading state immediately
       const welcomeMessage: Message = {
         id: `system-${Date.now()}`,
         content: `Hi, can you help me with my audio flow settings for "${flowDetails.name}". Here are the Flow details: 
@@ -63,6 +64,7 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
             sender: 'assistant'
           };
           setMessages(prev => [...prev, assistantMessage]);
+          setIsLoading(false); // Hide loading state after receiving response
           scrollToBottom();
         }
       }).catch(error => {

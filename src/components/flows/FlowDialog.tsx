@@ -47,16 +47,17 @@ const formSchema = z.object({
 });
 
 export const defaultValues = {
-  name: "",
+  name: "My Flow",
   format: JSON.stringify({
     details: {
       title: "",
       summary: "",
-      valid_points: []
+      valid_points: [],
+      logical_assumptions: []
     }
   }),
   prompt: "Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.",
-  instructions: "",
+  instructions: "Just talk about what ever you like!",
 };
 
 export function FlowDialog({

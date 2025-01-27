@@ -20,6 +20,8 @@ interface FlowBoardProps {
   onFlowChat: (flow: Flow) => void;
   selectedFlow: Flow | null;
   isMobileView: boolean;
+  setFlowChatBlank: (value: boolean) => void;
+  setIsFlowChatOpen: (value: boolean) => void;
 }
 
 export function FlowBoard({
@@ -32,8 +34,11 @@ export function FlowBoard({
   onFlowChat,
   selectedFlow,
   isMobileView,
+  setFlowChatBlank,
+  setIsFlowChatOpen,
 }: FlowBoardProps) {
   const [apiConnection, setApiConnection] = useState<APIConnection | null>(null);
+  const [flowChatBlank, setFlowChatBlankState] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -62,6 +67,13 @@ export function FlowBoard({
                 <Sparkles className="h-4 w-4 mr-2" />
                 Flow Help
               </a>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              setFlowChatBlankState(true);
+              setIsFlowChatOpen(true);
+            }} className="flex-1 sm:flex-none justify-center">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              New Flow Chat
             </Button>
             <Button onClick={onNewFlow} size="sm" className="flex-1 sm:flex-none justify-center">
               <Plus className="h-4 w-4 mr-2" />

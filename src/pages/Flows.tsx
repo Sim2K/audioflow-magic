@@ -8,7 +8,7 @@ import { APIConnectButton } from "@/modules/api-connect/components/APIConnectBut
 import { APIConnectForm } from "@/modules/api-connect/components/APIConnectForm";
 import { APIConnection } from "@/modules/api-connect/types/api-connect";
 import { useAuth } from "@/hooks/useAuth";
-import { FlowChatDialog } from "@/modules/flowchat";
+import { FlowChatDialog, FlowChatButton } from "@/modules/flowchat";
 
 const Flows = () => {
   const [flows, setFlows] = useState<Flow[]>([]);
@@ -17,6 +17,7 @@ const Flows = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAPIConnectOpen, setIsAPIConnectOpen] = useState(false);
   const [isFlowChatOpen, setIsFlowChatOpen] = useState(false);
+  const [flowChatBlank, setFlowChatBlank] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -191,6 +192,8 @@ const Flows = () => {
             onFlowChat={handleFlowChat}
             selectedFlow={selectedFlow}
             isMobileView={isMobileView}
+            setFlowChatBlank={setFlowChatBlank}
+            setIsFlowChatOpen={setIsFlowChatOpen}
           />
 
           <FlowDialog
