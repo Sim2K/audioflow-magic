@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 export function AppSidebar() {
   const { setOpenMobile, isMobile, openMobile } = useSidebar();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, session } = useAuth();
   const navigate = useNavigate();
 
   const handleNavClick = () => {
@@ -162,6 +162,7 @@ export function AppSidebar() {
               !showLabels ? "justify-center" : "justify-start",
               "rounded-xl"
             )}
+            onClick={() => navigate('/settings')}
           >
             <div className={cn(
               "flex items-center",
@@ -173,7 +174,7 @@ export function AppSidebar() {
               {showLabels && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">User Account</p>
-                  <p className="text-xs text-muted-foreground truncate">user@example.com</p>
+                  <p className="text-xs text-muted-foreground truncate">{session?.user?.email?.slice(0, 25) || 'user@example.com'}</p>
                 </div>
               )}
             </div>

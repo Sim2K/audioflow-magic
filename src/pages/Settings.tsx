@@ -208,11 +208,11 @@ const Settings = () => {
                 <div className="flex items-center justify-between space-x-2">
                   <div className="flex items-center space-x-2">
                     {storageLocation === 'cloud' ? (
-                      <CloudIcon className="w-4 h-4" />
+                      <CloudIcon className="w-8 h-8" />
                     ) : (
-                      <HardDriveIcon className="w-4 h-4" />
+                      <HardDriveIcon className="w-8 h-8" />
                     )}
-                    <span className="text-sm font-medium">
+                    <span className="text-lg font-large">
                       {storageLocation === 'cloud' ? 'Save to Cloud' : 'Local Save Only'}
                     </span>
                   </div>
