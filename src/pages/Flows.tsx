@@ -126,9 +126,31 @@ const Flows = () => {
   };
 
   const handleFlowChat = (flow: Flow) => {
-    console.log('Opening Flow Chat dialog for flow:', flow);
     setSelectedFlow(flow);
+    setFlowChatBlank(false);
     setIsFlowChatOpen(true);
+  };
+
+  const handleFlowChatSave = async (flow: Flow) => {
+    if (!user) return;
+    
+    try {
+      // Refresh flows list
+      const updatedFlows = await getFlows(user.id);
+      setFlows(updatedFlows);
+      setSelectedFlow(flow); // Select the newly created/updated flow
+      toast({
+        title: "Success",
+        description: "Flow saved successfully",
+      });
+    } catch (error) {
+      console.error('Error refreshing flows:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh flows",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCloseFlowChat = () => {
@@ -214,7 +236,8 @@ const Flows = () => {
                 isOpen={isFlowChatOpen}
                 onClose={handleCloseFlowChat}
                 flowDetails={selectedFlow}
-                onSave={handleSaveFlowDetails}
+                onSave={handleFlowChatSave}
+                flowChatBlank={flowChatBlank}
               />
             </>
           )}

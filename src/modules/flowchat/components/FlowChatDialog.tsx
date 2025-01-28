@@ -21,9 +21,9 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const emptyFlow = {
-    name: 'My Flow',
-    instructions: '',
-    prompt: '',
+    name: 'My New Flow',
+    instructions: 'Just talk about what ever you like!',
+    prompt: 'Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.',
     format: JSON.stringify({
       details: {
         title: "",
@@ -38,12 +38,15 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
   const [showChat, setShowChat] = useState(true); 
   const [chatKey, setChatKey] = useState(Date.now()); // Add key for chat reset
 
-  // Update details when flowDetails changes
+  // Update details when flowDetails changes or when opening dialog
   useEffect(() => {
-    if (!flowChatBlank && flowDetails) {
+    if (flowChatBlank && isOpen) {
+      setDetails(emptyFlow);
+      setChatKey(Date.now()); // Reset chat
+    } else if (!flowChatBlank && flowDetails) {
       setDetails(flowDetails);
     }
-  }, [flowDetails, flowChatBlank]);
+  }, [flowDetails, flowChatBlank, isOpen]);
 
   const handleDetailsUpdate = (updatedDetails: any) => {
     setDetails(updatedDetails);
