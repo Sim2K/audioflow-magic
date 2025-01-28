@@ -33,21 +33,10 @@ export async function forwardToExternalAPI(
 
     console.log('Making request with headers:', headers);
 
-    // Handle Deepseek specific config
-    const requestBody = 'defaultParams' in apiConnection
-      ? {
-          ...apiConnection.defaultParams,
-          ...aiResponse,
-          model: 'deepseek-chat'
-        }
-      : aiResponse;
-
-    console.log('Request body:', requestBody);
-
     const response = await fetch(apiConnection.url, {
       method: apiConnection.method,
       headers,
-      body: apiConnection.method !== 'GET' ? JSON.stringify(requestBody) : undefined
+      body: apiConnection.method !== 'GET' ? JSON.stringify(aiResponse) : undefined
     });
 
     let data;
@@ -58,14 +47,18 @@ export async function forwardToExternalAPI(
       data = await response.text();
     }
 
-    console.log('Raw API response:', data);
+    console.log('API response:', {
+      status: response.status,
+      statusText: response.statusText,
+      data
+    });
 
     return {
       status: response.ok ? 'success' : 'error',
-      data,
-      error: response.ok ? undefined : 'API request failed',
+      statusCode: response.status,
+      response: data,
       timestamp: new Date().toISOString(),
-      flowId: aiResponse.flowId || 'unknown',
+      flowId: apiConnection.flowId,
       method: apiConnection.method,
       url: apiConnection.url
     };
@@ -73,9 +66,9 @@ export async function forwardToExternalAPI(
     console.error('API forward error:', error);
     return {
       status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? error.message : 'Failed to forward to external API',
       timestamp: new Date().toISOString(),
-      flowId: aiResponse.flowId || 'unknown',
+      flowId: apiConnection.flowId,
       method: apiConnection.method,
       url: apiConnection.url
     };

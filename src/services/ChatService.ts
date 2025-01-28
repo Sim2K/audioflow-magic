@@ -1,10 +1,9 @@
 import { ChatMessage, ChatResponse } from '../types/chat';
-import { forwardToExternalAPI } from '../modules/api-connect/services/api-forwarder';
-import { chatConfig } from '../modules/api-connect/config/chat-config';
 
 export class ChatService {
     private static instance: ChatService;
     private apiKey: string;
+    // private readonly BASE_URL = `${import.meta.env.VITE_API_URL}/chat/completions`;  // Direct to Deepseek API
     private readonly BASE_URL = '/api/chat/chat/completions';  // Using proxied endpoint
 
     private constructor() {
@@ -14,7 +13,6 @@ export class ChatService {
                 throw new Error('VITE_DEEPSEEK_API_KEY not found in environment variables');
             }
             this.apiKey = apiKey;
-            chatConfig.authToken = this.apiKey;
             console.log('ChatService initialized successfully');
         } catch (error) {
             console.error('Failed to initialize ChatService:', error);
@@ -85,53 +83,30 @@ export class ChatService {
             const hasSystemMessage = messages.some(msg => msg.role === 'system');
             const finalMessages = hasSystemMessage ? messages : [this.SYSTEM_MESSAGE, ...messages];
 
-            const response = await forwardToExternalAPI(chatConfig, {
-                messages: finalMessages
-            });
-
-            if (response.status === 'error') {
-                throw new Error(response.error || 'Chat completion failed');
-            }
-
-            // Parse the response content
+            const response = await this.makeAPIRequest(finalMessages);
+            const rawData = await response.json();
+            
+            // Extract the actual message content from the API response
             try {
-                console.log('Raw response:', response);
-                
-                if (!response.data) {
-                    throw new Error('No response data received');
+                const content = rawData.choices?.[0]?.message?.content;
+                if (!content) {
+                    console.error('No content in response:', rawData);
+                    throw new Error('No content in response');
                 }
 
-                // Check for direct ChatMSGs format
-                if (response.data.ChatMSGs) {
-                    console.log('Direct format response:', response.data);
-                    return response.data;
-                }
-                
-                // Check for Deepseek API format
-                if (response.data.choices?.[0]?.message?.content) {
-                    const content = response.data.choices[0].message.content;
-                    console.log('Deepseek response content:', content);
-                    
-                    try {
-                        const parsedContent = JSON.parse(content);
-                        console.log('Parsed content:', parsedContent);
+                // Parse the content which should be in our expected JSON format
+                const parsedContent = JSON.parse(content);
+                console.log('Parsed content:', parsedContent);
 
-                        if (!parsedContent.ChatMSGs) {
-                            throw new Error('Missing ChatMSGs in parsed content');
-                        }
-
-                        return parsedContent;
-                    } catch (parseError) {
-                        console.error('Error parsing content:', parseError);
-                        throw new Error('Invalid JSON in response content');
-                    }
+                if (!parsedContent.ChatMSGs) {
+                    console.error('Invalid response format - missing ChatMSGs:', parsedContent);
+                    throw new Error('Invalid response format from API');
                 }
 
-                console.error('Unexpected response format:', response.data);
-                throw new Error('Unexpected response format');
-            } catch (error) {
-                console.error('Error parsing response:', error);
-                throw new Error('Failed to parse chat response');
+                return parsedContent;
+            } catch (parseError) {
+                console.error('Error processing API response:', parseError);
+                throw new Error('Failed to process API response');
             }
         } catch (error) {
             console.error('Error in chat completion:', error);
@@ -159,7 +134,7 @@ export class ChatService {
         content: `Task Overview: You will review Flows/do interviews with the user to gather critical information about their upcoming audio recording transcription. The goal is to understand the recording's context, participants, purpose, and structure so you know how to deal with its transcript. Based on this, you will generate a tailored Flow consisting of:
 
 # Rules: 
-- You only respond using using the JSON format Response 1 or Response 2, for every response and all responses must be inside the selected JSON formats. Do not use JSON codebox markdown.
+- You only respond using using the JSON format Response 1 or Response 2, for every response and all responses must be inside the selected JSON format. Do not use JSON codebox markdown.
 - There must only be 1 data point called ChatMSGs in a response and that 1 data point must always have a response in it and should never be blank.
 - Always bring the topic back to working on the users flow. The user can talk to you abolut anythiung, but every resppnse must be about bringing itback to helping the user with their flow.
 

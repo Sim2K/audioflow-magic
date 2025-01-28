@@ -22,14 +22,3 @@ export interface CURLParseResult {
   authType: AuthType;
   authToken?: string;
 }
-
-export interface DeepseekConfig extends APIConnection {
-    defaultParams: {
-        temperature: number;
-        max_completion_tokens: number;
-        top_p: number;
-        frequency_penalty: number;
-        presence_penalty: number;
-        response_format: { type: string };
-    }
-}
