@@ -12,9 +12,10 @@ interface FlowChatProps {
         prompt: string;
         instructions: string;
     };
+    flowChatBlank?: boolean;
 }
 
-export const FlowChat: React.FC<FlowChatProps> = ({ onSave, onClose, initialFlow }) => {
+export const FlowChat: React.FC<FlowChatProps> = ({ onSave, onClose, initialFlow, flowChatBlank }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +25,13 @@ export const FlowChat: React.FC<FlowChatProps> = ({ onSave, onClose, initialFlow
     const chatContainerId = 'flow-chat-container';
 
     useEffect(() => {
-        // Initialize chat with system message if there's an initial flow
-        if (initialFlow) {
+        if (flowChatBlank) {
+            const initialMessage: ChatMessage = {
+                role: 'user',
+                content: 'Hi, can you help me craft a new Flow pls!'
+            };
+            setMessages([initialMessage]);
+        } else if (initialFlow) {
             const initialMessage: ChatMessage = {
                 role: 'user',
                 content: `Hi, can you help me with my audio flow settings for "${initialFlow.name}". Here are the Flow details: 
@@ -39,12 +45,11 @@ Prompt Template:
 Format Template:
 "${initialFlow.format}"
 
-
 I need to make some improvements to the flow. Please analyse it in painstaking detail to fully understand what it is about.`
             };
             setMessages([initialMessage]);
         }
-    }, [initialFlow]);
+    }, [initialFlow, flowChatBlank]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

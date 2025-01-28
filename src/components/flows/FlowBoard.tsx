@@ -8,7 +8,7 @@ import { getAPIConnection } from "@/modules/api-connect/utils/storage";
 import { useEffect, useState } from "react";
 import { APIConnection, APIHeader } from "@/modules/api-connect/types/api-connect";
 import { useAuth } from "@/hooks/useAuth";
-import { FlowChatButton } from "@/modules/flowchat";
+import { FlowChatButton, FlowChatDialog } from "@/modules/flowchat";
 
 interface FlowBoardProps {
   flows: Flow[];
@@ -21,7 +21,6 @@ interface FlowBoardProps {
   selectedFlow: Flow | null;
   isMobileView: boolean;
   setFlowChatBlank: (value: boolean) => void;
-  setIsFlowChatOpen: (value: boolean) => void;
 }
 
 export function FlowBoard({
@@ -35,10 +34,10 @@ export function FlowBoard({
   selectedFlow,
   isMobileView,
   setFlowChatBlank,
-  setIsFlowChatOpen,
 }: FlowBoardProps) {
   const [apiConnection, setApiConnection] = useState<APIConnection | null>(null);
   const [flowChatBlank, setFlowChatBlankState] = useState(false);
+  const [isFlowChatOpen, setIsFlowChatOpen] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -52,6 +51,14 @@ export function FlowBoard({
     }
     fetchAPIConnection();
   }, [selectedFlow, user]);
+
+  const handleCloseFlowChat = () => {
+    setIsFlowChatOpen(false);
+  };
+
+  const handleSaveFlowDetails = () => {
+    // Add your logic here
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -252,6 +259,13 @@ export function FlowBoard({
           </div>
         </div>
       </div>
+      <FlowChatDialog
+        isOpen={isFlowChatOpen}
+        onClose={handleCloseFlowChat}
+        flowDetails={selectedFlow}
+        onSave={handleSaveFlowDetails}
+        flowChatBlank={flowChatBlank}
+      />
     </div>
   );
 }

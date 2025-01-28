@@ -20,6 +20,7 @@ export interface FlowChatDialogProps {
   onClose: () => void;
   flowDetails: FlowDetails;
   onSave: (updatedFlow: FlowDetails) => void;
+  flowChatBlank?: boolean;
 }
 
 export interface ChatProps {

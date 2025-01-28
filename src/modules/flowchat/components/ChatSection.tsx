@@ -10,11 +10,12 @@ interface ChatProps {
   onSendMessage: (flowData: any) => void;
   flowDetails?: any;
   isOpen: boolean;
+  flowChatBlank?: boolean;
 }
 
 const SYSTEM_MESSAGE = 'SYSTEM_MESSAGE';
 
-const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen }) => {
+const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen, flowChatBlank }) => {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,8 +31,36 @@ const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen }
 
   // Initialize welcome message only if no messages exist and dialog is open
   useEffect(() => {
-    if (flowDetails && messages.length === 0 && isOpen) {
-      setIsLoading(true); // Show loading state immediately
+    if (flowChatBlank) {
+      setIsLoading(true);
+      const welcomeMessage: Message = {
+        id: `system-${Date.now()}`,
+        content: 'Hi, can you help me craft a new Flow pls!',
+        timestamp: new Date(),
+        sender: 'user'
+      };
+      setMessages([welcomeMessage]);
+
+      chatService.createChatCompletion([{
+        role: 'user',
+        content: welcomeMessage.content
+      }]).then(response => {
+        if (response.ChatMSGs && isOpen) {
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            content: response.ChatMSGs.content,
+            timestamp: new Date(),
+            sender: 'assistant'
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+          setIsLoading(false);
+          scrollToBottom();
+        }
+      }).catch(error => {
+        console.error('Error sending initial message:', error);
+      });
+    } else if (flowDetails && messages.length === 0 && isOpen) {
+      setIsLoading(true);
       const welcomeMessage: Message = {
         id: `system-${Date.now()}`,
         content: `Hi, can you help me with my audio flow settings for "${flowDetails.name}". Here are the Flow details: 
@@ -51,12 +80,11 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
       };
       setMessages([welcomeMessage]);
 
-      // Only send API request if dialog is open
       chatService.createChatCompletion([{
         role: 'user',
         content: welcomeMessage.content
       }]).then(response => {
-        if (response.ChatMSGs && isOpen) { // Check isOpen before updating state
+        if (response.ChatMSGs && isOpen) {
           const assistantMessage: Message = {
             id: `assistant-${Date.now()}`,
             content: response.ChatMSGs.content,
@@ -64,14 +92,14 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
             sender: 'assistant'
           };
           setMessages(prev => [...prev, assistantMessage]);
-          setIsLoading(false); // Hide loading state after receiving response
+          setIsLoading(false);
           scrollToBottom();
         }
       }).catch(error => {
         console.error('Error sending initial message:', error);
       });
     }
-  }, [flowDetails, chatService, messages.length, isOpen]);
+  }, [flowDetails, chatService, messages.length, isOpen, flowChatBlank]);
 
   // Scroll to bottom helper function
   const scrollToBottom = () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch"; 
@@ -6,36 +6,95 @@ import ChatSection from './ChatSection';
 import FlowDetailsSection from './FlowDetailsSection';
 import { cn } from "@/lib/utils";
 import { FlowChatDialogProps } from '../types';
-import { FlowDataType } from '@/types/chat';
+import { Flow } from '@/utils/storage';
+import { saveFlow } from '@/utils/flowManager';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
   isOpen,
   onClose,
   flowDetails,
-  onSave
+  onSave,
+  flowChatBlank
 }) => {
-  const [details, setDetails] = useState(flowDetails);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const emptyFlow = {
+    name: 'My Flow',
+    instructions: '',
+    prompt: '',
+    format: JSON.stringify({
+      details: {
+        title: "",
+        summary: "",
+        valid_points: [],
+        logical_assumptions: []
+      }
+    })
+  };
+
+  const [details, setDetails] = useState(flowChatBlank ? emptyFlow : flowDetails);
   const [showChat, setShowChat] = useState(true); 
   const [chatKey, setChatKey] = useState(Date.now()); // Add key for chat reset
+
+  // Update details when flowDetails changes
+  useEffect(() => {
+    if (!flowChatBlank && flowDetails) {
+      setDetails(flowDetails);
+    }
+  }, [flowDetails, flowChatBlank]);
 
   const handleDetailsUpdate = (updatedDetails: any) => {
     setDetails(updatedDetails);
   };
 
-  const handleSave = () => {
-    if (!flowDetails || !details) return;
-    
-    const updatedFlow = {
-      ...flowDetails,  // Keep existing flow data
-      ...details,      // Update with new details
-      id: flowDetails.id  // Ensure we keep the same ID
-    };
-    
-    onSave(updatedFlow);
-    onClose();
+  const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to save flows",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (flowChatBlank) {
+        // Create new flow
+        const newFlow: Omit<Flow, 'id'> = {
+          name: details?.name || emptyFlow.name,
+          instructions: details?.instructions || emptyFlow.instructions,
+          prompt: details?.prompt || emptyFlow.prompt,
+          format: details?.format || emptyFlow.format
+        };
+        const savedFlow = await saveFlow(newFlow, user.id);
+        onSave(savedFlow);
+        toast({
+          title: "Success",
+          description: "Flow created successfully",
+        });
+      } else if (flowDetails && details) {
+        // Update existing flow
+        const updatedFlow = {
+          ...flowDetails,
+          ...details,
+          id: flowDetails.id
+        };
+        onSave(updatedFlow);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error saving flow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save flow",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleMessage = async (flowData: FlowDataType) => {
+  const handleMessage = async (flowData: any) => {
     if (!flowData) return;
 
     // Update the flow details with the AI suggestions
@@ -83,6 +142,7 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
               onSendMessage={handleMessage} 
               flowDetails={details}
               isOpen={isOpen}
+              flowChatBlank={flowChatBlank}
             />
           </div>
           

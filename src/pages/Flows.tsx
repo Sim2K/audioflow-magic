@@ -193,7 +193,6 @@ const Flows = () => {
             selectedFlow={selectedFlow}
             isMobileView={isMobileView}
             setFlowChatBlank={setFlowChatBlank}
-            setIsFlowChatOpen={setIsFlowChatOpen}
           />
 
           <FlowDialog
