@@ -31,7 +31,7 @@ const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen, 
 
   // Initialize welcome message only if no messages exist and dialog is open
   useEffect(() => {
-    if (flowChatBlank) {
+    if (flowChatBlank && isOpen && messages.length === 0) {
       setIsLoading(true);
       const welcomeMessage: Message = {
         id: `system-${Date.now()}`,
@@ -39,26 +39,42 @@ const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen, 
         timestamp: new Date(),
         sender: 'user'
       };
+      
+      // Set initial message
       setMessages([welcomeMessage]);
 
-      chatService.createChatCompletion([{
-        role: 'user',
-        content: welcomeMessage.content
-      }]).then(response => {
-        if (response.ChatMSGs && isOpen) {
-          const assistantMessage: Message = {
-            id: `assistant-${Date.now()}`,
-            content: response.ChatMSGs.content,
+      // Get AI response
+      const getInitialResponse = async () => {
+        try {
+          const response = await chatService.createChatCompletion([{
+            role: 'user',
+            content: welcomeMessage.content
+          }]);
+
+          if (response.ChatMSGs && isOpen) {
+            const assistantMessage: Message = {
+              id: `assistant-${Date.now()}`,
+              content: response.ChatMSGs.content,
+              timestamp: new Date(),
+              sender: 'assistant'
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+          }
+        } catch (error) {
+          console.error('Error sending initial message:', error);
+          setMessages(prev => [...prev, {
+            id: `error-${Date.now()}`,
+            content: 'Sorry, there was an error starting the chat. Please try again.',
             timestamp: new Date(),
             sender: 'assistant'
-          };
-          setMessages(prev => [...prev, assistantMessage]);
+          }]);
+        } finally {
           setIsLoading(false);
           scrollToBottom();
         }
-      }).catch(error => {
-        console.error('Error sending initial message:', error);
-      });
+      };
+
+      getInitialResponse();
     } else if (flowDetails && messages.length === 0 && isOpen) {
       setIsLoading(true);
       const welcomeMessage: Message = {
@@ -78,26 +94,42 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
         timestamp: new Date(),
         sender: 'user'
       };
+      
+      // Set initial message
       setMessages([welcomeMessage]);
 
-      chatService.createChatCompletion([{
-        role: 'user',
-        content: welcomeMessage.content
-      }]).then(response => {
-        if (response.ChatMSGs && isOpen) {
-          const assistantMessage: Message = {
-            id: `assistant-${Date.now()}`,
-            content: response.ChatMSGs.content,
+      // Get AI response
+      const getInitialResponse = async () => {
+        try {
+          const response = await chatService.createChatCompletion([{
+            role: 'user',
+            content: welcomeMessage.content
+          }]);
+
+          if (response.ChatMSGs && isOpen) {
+            const assistantMessage: Message = {
+              id: `assistant-${Date.now()}`,
+              content: response.ChatMSGs.content,
+              timestamp: new Date(),
+              sender: 'assistant'
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+          }
+        } catch (error) {
+          console.error('Error sending initial message:', error);
+          setMessages(prev => [...prev, {
+            id: `error-${Date.now()}`,
+            content: 'Sorry, there was an error starting the chat. Please try again.',
             timestamp: new Date(),
             sender: 'assistant'
-          };
-          setMessages(prev => [...prev, assistantMessage]);
+          }]);
+        } finally {
           setIsLoading(false);
           scrollToBottom();
         }
-      }).catch(error => {
-        console.error('Error sending initial message:', error);
-      });
+      };
+
+      getInitialResponse();
     }
   }, [flowDetails, chatService, messages.length, isOpen, flowChatBlank]);
 
@@ -127,21 +159,20 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
       sender: 'user'
     };
 
-    // Update messages state with new user message
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    // Update messages state with new user message immediately
+    setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
-      // Convert all messages to API format, including previous assistant responses
-      const apiMessages = newMessages.map(msg => ({
+      // Get current messages including the new one we just added
+      const currentMessages = [...messages, userMessage];
+      
+      // Convert messages to API format
+      const apiMessages = currentMessages.map(msg => ({
         role: msg.sender as 'user' | 'assistant',
         content: msg.content
       }));
 
-      console.log('Current messages:', newMessages);
-      console.log('Sending messages to API:', apiMessages);
-      
       const response = await chatService.createChatCompletion(apiMessages);
 
       if (response.ChatMSGs) {
@@ -153,9 +184,8 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
         };
         
         // Update messages with assistant response
-        setMessages(prevMessages => [...prevMessages, assistantMessage]);
-        scrollToBottom();
-
+        setMessages(prev => [...prev, assistantMessage]);
+        
         // Handle FlowData if present
         if (response.FlowData && onSendMessage) {
           onSendMessage(response.FlowData);
@@ -163,9 +193,18 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
       }
     } catch (error) {
       console.error('Error in chat:', error);
-      // Add error handling here if needed
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `error-${Date.now()}`,
+          content: 'Sorry, there was an error processing your message. Please try again.',
+          timestamp: new Date(),
+          sender: 'assistant'
+        }
+      ]);
     } finally {
       setIsLoading(false);
+      scrollToBottom();
     }
   };
 
