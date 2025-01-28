@@ -84,7 +84,12 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
           ...details,
           id: flowDetails.id
         };
-        onSave(updatedFlow);
+        const savedFlow = await saveFlow(updatedFlow, user.id, flowDetails.id);
+        onSave(savedFlow);
+        toast({
+          title: "Success",
+          description: "Flow updated successfully",
+        });
       }
       onClose();
     } catch (error) {
@@ -120,7 +125,11 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[80vw] max-w-[60vw] h-[80vh]" aria-describedby="flow-chat-description">
         <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle>Flow Chat</DialogTitle>
+          <DialogTitle>
+            
+          {flowChatBlank ? 'New Flow Chat' : 'Flow Chat'}
+            
+            </DialogTitle>
           <p id="flow-chat-description" className="text-sm text-muted-foreground">
             Configure your audio flow settings
           </p>

@@ -69,6 +69,9 @@ const Flows = () => {
       const savedFlow = await saveFlow(data, user.id, editingFlow);
       const updatedFlows = await getFlows(user.id);
       setFlows(updatedFlows);
+      if (selectedFlow?.id === editingFlow) {
+        setSelectedFlow(savedFlow);
+      }
       toast({
         title: "Success",
         description: `Flow ${editingFlow ? "updated" : "created"} successfully`,
@@ -219,7 +222,10 @@ const Flows = () => {
 
           <FlowDialog
             open={isOpen}
-            onOpenChange={setIsOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) setEditingFlow(undefined);
+            }}
             onSubmit={onSubmit}
             editingFlow={flows.find((f) => f.id === editingFlow)}
           />

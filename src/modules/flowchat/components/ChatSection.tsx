@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
 import { Message } from '../types';
-import { ChatService } from '@/services/ChatService';
+import { DeepseekService } from '@/utils/deepseek';
 
 interface ChatProps {
   onSendMessage: (flowData: any) => void;
@@ -21,8 +21,8 @@ const ChatSection: React.FC<ChatProps> = ({ onSendMessage, flowDetails, isOpen, 
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Memoize chatService instance
-  const chatService = useMemo(() => ChatService.getInstance(), []);
+  // Memoize deepseek service instance
+  const chatService = useMemo(() => DeepseekService.getInstance(), []);
 
   useEffect(() => {
     setIsLoading(false);

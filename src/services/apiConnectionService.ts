@@ -9,14 +9,13 @@ export class APIConnectionService {
       .select('*')
       .eq('flow_id', flowId)
       .eq('user_id', userId)
-      .single();
+      .limit(1);
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // Record not found
       throw new Error(`Error fetching API connection: ${error.message}`);
     }
 
-    return data ? toAPIConnection(data as DBAPIConnection) : null;
+    return data && data.length > 0 ? toAPIConnection(data[0] as DBAPIConnection) : null;
   }
 
   static async createAPIConnection(connection: APIConnection, flowId: string, userId: string): Promise<APIConnection> {
