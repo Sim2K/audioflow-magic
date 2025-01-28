@@ -22,7 +22,7 @@ export const FlowChatDialog: React.FC<FlowChatDialogProps> = ({
   const { toast } = useToast();
   const emptyFlow = {
     name: 'My New Flow',
-    instructions: 'Just talk about what ever you like!',
+    instructions: 'Just talk about what ever you like.',
     prompt: 'Summarize the following transcript: {transcript} in painstaking detail revealing as many facts as possible and using logic to bring out assumptions that can be logically explained.',
     format: JSON.stringify({
       details: {
