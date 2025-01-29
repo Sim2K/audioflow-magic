@@ -13,7 +13,7 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   const formData = new FormData();
   const config = formatConfigs[format];
 
-  console.log('About to choose server or standard!');
+  console.log('About to choose server or standard!  v1');
   console.log('isIOSDevice check:', isIOSDevice());
   
   if (!isIOSDevice()) {
@@ -26,7 +26,16 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
       processFormData.append('file', audioBlob);
       processFormData.append('isIOS', 'true');
       
-      const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}:3000/api/process-audio`, {
+      
+      // And update the fetch URL section to:
+      const baseUrl = import.meta.env.VITE_API_SERVER_URL;
+      const isLocalhost = baseUrl.includes('localhost');
+      const serverUrl = isLocalhost ? `${baseUrl}:3000` : baseUrl;
+            
+      console.log('Using server URL:', serverUrl);
+            
+      const response = await fetch(`${serverUrl}/api/process-audio`, {
+      //const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}:3000/api/process-audio`, {
         method: 'POST',
         body: processFormData
       });
