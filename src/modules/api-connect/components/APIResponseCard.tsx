@@ -8,7 +8,7 @@ interface APIResponseCardProps {
 }
 
 export function APIResponseCard({ result }: APIResponseCardProps) {
-  if (!result) return null;
+  if (!result || (!result.url && !result.response && !result.error)) return null;
 
   return (
     <Card className="mb-4">
