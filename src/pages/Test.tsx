@@ -16,8 +16,10 @@ export default function Test() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Update available MIME types when format changes
   useEffect(() => {
@@ -139,6 +141,39 @@ export default function Test() {
       setIsRecording(false);
     }
   };
+
+  const playRecording = () => {
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
+  };
+
+  const stopPlaying = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  };
+
+  // Add audio element event listeners
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
+      const handleEnded = () => setIsPlaying(false);
+
+      audio.addEventListener('play', handlePlay);
+      audio.addEventListener('pause', handlePause);
+      audio.addEventListener('ended', handleEnded);
+
+      return () => {
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('pause', handlePause);
+        audio.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, [audioUrl]);
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -265,10 +300,30 @@ export default function Test() {
           {audioUrl && (
             <div className="mt-4">
               <h3 className="font-bold mb-2">Recording Preview:</h3>
-              <audio controls className="w-full">
-                <source src={audioUrl} type={selectedMimeType} />
-                Your browser does not support the audio element.
-              </audio>
+              <div className="space-y-2">
+                <audio ref={audioRef} controls className="w-full">
+                  <source src={audioUrl} type={selectedMimeType} />
+                  Your browser does not support the audio element.
+                </audio>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={playRecording}
+                    disabled={isPlaying || isRecording}
+                    className="px-4 py-2 bg-green-500 text-white rounded disabled:bg-gray-400"
+                  >
+                    Play
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopPlaying}
+                    disabled={!isPlaying || isRecording}
+                    className="px-4 py-2 bg-yellow-500 text-white rounded disabled:bg-gray-400"
+                  >
+                    Stop Playing
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
