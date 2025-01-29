@@ -34,6 +34,76 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   return formData;
 }
 
+export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ transcript: string; processedResponse: any }> {
+  const apiKey = localStorage.getItem(StorageKeys.OPENAI_API_KEY);
+  if (!apiKey) {
+    throw new Error('OpenAI API key not found');
+  }
+
+  try {
+    console.log('Starting transcription with blob:', {
+      size: audioBlob.size,
+      type: audioBlob.type
+    });
+
+    // Create FormData
+    const formData = new FormData();
+    
+    // Keep MP3 conversion for other potential uses
+    const audioData = await audioBlob.arrayBuffer();
+    const audioContext = new AudioContext();
+    const audioBuffer = await audioContext.decodeAudioData(audioData);
+    const mp3Blob = await convertToMp3(audioBuffer);
+    
+    console.log('Audio conversion completed:', {
+      originalSize: audioBlob.size,
+      originalType: audioBlob.type,
+      mp3Size: mp3Blob.size,
+      mp3Type: mp3Blob.type
+    });
+
+    // Use original blob for OpenAI as it's already in a supported format
+    const extension = audioBlob.type.includes('webm') ? 'webm' : 'm4a';
+    formData.append('file', audioBlob, `audio.${extension}`);
+    formData.append('model', 'whisper-1');
+    formData.append('language', 'en');
+
+    console.log('Sending request to OpenAI');
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Transcription failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const result: WhisperResponse = await response.json();
+    const cleanTranscript = result.text.trim();
+
+    // Process the response based on the flow
+    const processedResponse = await processTranscriptionResponse(cleanTranscript, flow);
+
+    return {
+      transcript: cleanTranscript,
+      processedResponse
+    };
+  } catch (error) {
+    console.error('Transcription error details:', error);
+    throw error;
+  }
+}
+
 async function convertToMp3(audioBuffer: AudioBuffer): Promise<Blob> {
   // Create an offline context
   const offlineContext = new OfflineAudioContext(
@@ -87,124 +157,9 @@ async function convertToMp3(audioBuffer: AudioBuffer): Promise<Blob> {
   return wavBlob;
 }
 
-async function convertToWebM(audioBuffer: AudioBuffer): Promise<Blob> {
-  const format = formatConfigs.webm;
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const source = audioContext.createMediaStreamDestination();
-  const audioNode = audioContext.createBufferSource();
-  audioNode.buffer = audioBuffer;
-  audioNode.connect(source);
-  
-  return new Promise((resolve, reject) => {
-    try {
-      const mediaRecorder = new MediaRecorder(source.stream, {
-        mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: format.bitrate
-      });
-      
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const webmBlob = new Blob(chunks, { type: 'audio/webm' });
-        audioContext.close();
-        resolve(webmBlob);
-      };
-      
-      mediaRecorder.start();
-      audioNode.start(0);
-      setTimeout(() => mediaRecorder.stop(), (audioBuffer.duration * 1000) + 100);
-    } catch (error) {
-      audioContext.close();
-      reject(error);
-    }
-  });
-}
-
 function writeString(view: DataView, offset: number, string: string) {
   for (let i = 0; i < string.length; i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
-  }
-}
-
-export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ transcript: string; processedResponse: any }> {
-  const apiKey = localStorage.getItem(StorageKeys.OPENAI_API_KEY);
-  if (!apiKey) {
-    throw new Error('OpenAI API key not found');
-  }
-
-  try {
-    console.log('Starting transcription with blob:', {
-      size: audioBlob.size,
-      type: audioBlob.type
-    });
-
-    // Create FormData
-    const formData = new FormData();
-    
-    // Keep MP3 conversion for other potential uses
-    const audioData = await audioBlob.arrayBuffer();
-    const audioContext = new AudioContext();
-    const audioBuffer = await audioContext.decodeAudioData(audioData);
-    const mp3Blob = await convertToMp3(audioBuffer);
-    
-    console.log('Audio conversion completed:', {
-      originalSize: audioBlob.size,
-      originalType: audioBlob.type,
-      mp3Size: mp3Blob.size,
-      mp3Type: mp3Blob.type
-    });
-
-    // Convert to WebM if it's an iOS M4A file
-    if (audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a')) {
-      console.log('Converting iOS M4A to WebM format');
-      const webmBlob = await convertToWebM(audioBuffer);
-      formData.append('file', webmBlob, 'audio.webm');
-      console.log('Conversion to WebM completed:', {
-        webmSize: webmBlob.size,
-        webmType: webmBlob.type
-      });
-    } else {
-      // Use original blob for non-iOS as it's already in a supported format
-      const extension = audioBlob.type.includes('webm') ? 'webm' : 'm4a';
-      formData.append('file', audioBlob, `audio.${extension}`);
-    }
-
-    formData.append('model', 'whisper-1');
-    formData.append('language', 'en');
-
-    console.log('Sending request to OpenAI');
-
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
-      throw new Error(`Transcription failed: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-
-    const result: WhisperResponse = await response.json();
-    const cleanTranscript = result.text.trim();
-
-    // Process the response based on the flow
-    const processedResponse = await processTranscriptionResponse(cleanTranscript, flow);
-
-    return {
-      transcript: cleanTranscript,
-      processedResponse
-    };
-  } catch (error) {
-    console.error('Transcription error details:', error);
-    throw error;
   }
 }
 

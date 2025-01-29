@@ -10,6 +10,7 @@ export interface AudioFormatConfig {
 export const mimeTypes = {
   webm: ['audio/webm;codecs=opus', 'audio/webm'],
   mp4: [
+    'audio/mp4;codecs=mp4a',
     'audio/mp4;codecs=mp4a.40.2',
     'audio/mp4;codecs=aac',
     'audio/mp4;codecs=alac',
@@ -28,10 +29,10 @@ export const formatConfigs = {
   },
   mp4: {
     mimeType: 'audio/mp4',
-    codec: 'mp4a.40.2',  // Standard AAC codec identifier
+    codec: 'mp4a',
     extension: 'm4a',
-    bitrate: 32000,
-    sampleRate: 22050
+    bitrate: 16000,
+    sampleRate: 16000
   }
 } as const;
 
