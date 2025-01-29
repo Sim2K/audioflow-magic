@@ -1,6 +1,7 @@
 import { StorageKeys } from './storage';
 import { Flow } from './storage';
 import { formatConfigs, SupportedFormat } from './audioTypes';
+import { isIOSDevice } from './audioFormatDetector';
 
 const DEFAULT_COMPLETION_ENDPOINT = 'v1/completions';
 
@@ -12,20 +13,61 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   const formData = new FormData();
   const config = formatConfigs[format];
   
-  // Check if file needs to be chunked (>25MB)
-  if (audioBlob.size > 25 * 1024 * 1024) {
-    console.log('Audio file too large, chunking...');
-    const chunkSize = 20 * 1024 * 1024; // 20MB chunks
-    const chunks = Math.ceil(audioBlob.size / chunkSize);
-    
-    for (let i = 0; i < chunks; i++) {
-      const start = i * chunkSize;
-      const end = Math.min(start + chunkSize, audioBlob.size);
-      const chunk = audioBlob.slice(start, end, `${config.mimeType};codecs=${config.codec}`);
-      formData.append('file', chunk, `chunk_${i}.${config.extension}`);
+  if (isIOSDevice()) {
+    try {
+      const audioData = await audioBlob.arrayBuffer();
+      const audioContext = new AudioContext({
+        sampleRate: 16000
+      });
+      
+      const audioBuffer = await audioContext.decodeAudioData(audioData);
+      const processedBuffer = audioContext.createBuffer(
+        1,
+        audioBuffer.length,
+        16000
+      );
+      
+      // Copy and process audio data
+      const channelData = audioBuffer.getChannelData(0);
+      processedBuffer.copyToChannel(channelData, 0);
+      
+      // Convert to correct format
+      const processedBlob = await new Promise<Blob>((resolve) => {
+        const stream = audioContext.createMediaStreamDestination().stream;
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/mp4;codecs=mp4a.40.2',
+          audioBitsPerSecond: 16000
+        });
+        
+        const chunks: Blob[] = [];
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/mp4' }));
+        
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), 100);
+      });
+      
+      formData.append('file', processedBlob, `audio.m4a`);
+    } catch (error) {
+      console.error('iOS audio processing failed, falling back to original:', error);
+      formData.append('file', audioBlob, `audio.${config.extension}`);
     }
   } else {
-    formData.append('file', audioBlob, `audio.${config.extension}`);
+    // Existing code for non-iOS devices
+    if (audioBlob.size > 25 * 1024 * 1024) {
+      console.log('Audio file too large, chunking...');
+      const chunkSize = 20 * 1024 * 1024; // 20MB chunks
+      const chunks = Math.ceil(audioBlob.size / chunkSize);
+      
+      for (let i = 0; i < chunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, audioBlob.size);
+        const chunk = audioBlob.slice(start, end, `${config.mimeType};codecs=${config.codec}`);
+        formData.append('file', chunk, `chunk_${i}.${config.extension}`);
+      }
+    } else {
+      formData.append('file', audioBlob, `audio.${config.extension}`);
+    }
   }
   
   formData.append('model', 'whisper-1');
@@ -47,27 +89,9 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     });
 
     // Create FormData
-    const formData = new FormData();
+    const format: SupportedFormat = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
+    const formData = await prepareAudioForUpload(audioBlob, format);
     
-    // Keep MP3 conversion for other potential uses
-    const audioData = await audioBlob.arrayBuffer();
-    const audioContext = new AudioContext();
-    const audioBuffer = await audioContext.decodeAudioData(audioData);
-    const mp3Blob = await convertToMp3(audioBuffer);
-    
-    console.log('Audio conversion completed:', {
-      originalSize: audioBlob.size,
-      originalType: audioBlob.type,
-      mp3Size: mp3Blob.size,
-      mp3Type: mp3Blob.type
-    });
-
-    // Use original blob for OpenAI as it's already in a supported format
-    const extension = audioBlob.type.includes('webm') ? 'webm' : 'm4a';
-    formData.append('file', audioBlob, `audio.${extension}`);
-    formData.append('model', 'whisper-1');
-    formData.append('language', 'en');
-
     console.log('Sending request to OpenAI');
 
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {

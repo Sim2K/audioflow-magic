@@ -4,7 +4,7 @@ export interface AudioFormatSupport {
   preferredFormat: 'webm' | 'mp4';
 }
 
-function isIOSDevice(): boolean {
+export function isIOSDevice(): boolean {
   const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
   const platform = navigator.platform || '';
   
@@ -27,9 +27,9 @@ function getAudioSupport(): { webm: boolean, mp4: boolean } {
     const mimeTypes = {
       webm: ['audio/webm;codecs=opus', 'audio/webm'],
       mp4: [
-        //'audio/aac',
-        //'audio/mp4;codecs=aac',
-        //'audio/mp4;codecs=mp4a.40.2',
+        'audio/aac',
+        'audio/mp4;codecs=aac',
+        'audio/mp4;codecs=mp4a.40.2',
         'audio/mp4'
       ]
     };

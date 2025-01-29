@@ -112,9 +112,10 @@ export default function Test() {
         stream.getTracks().forEach(track => track.stop());
       };
 
-      mediaRecorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event);
-        setRecordingError('Recording error: ' + event.error.message);
+      mediaRecorder.onerror = (event: Event) => {
+        const error = (event as any).error;
+        console.error('MediaRecorder error:', error);
+        setRecordingError('Recording error: ' + (error?.message || 'Unknown error'));
         stream.getTracks().forEach(track => track.stop());
       };
 
