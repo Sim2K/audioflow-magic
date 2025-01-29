@@ -26,7 +26,7 @@ export const formatConfigs = {
     sampleRate: 16000
   },
   mp4: {
-    mimeType: 'audio/mp4;codecs=aac',
+    mimeType: 'audio/aac',
     codec: 'aac',
     extension: 'm4a',
     bitrate: 16000,
