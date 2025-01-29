@@ -12,15 +12,21 @@ interface WhisperResponse {
 async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): Promise<FormData> {
   const formData = new FormData();
   const config = formatConfigs[format];
+
+  console.log('About to choose server or standard!');
+  console.log('isIOSDevice check:', isIOSDevice());
   
   if (isIOSDevice()) {
     try {
       // Send to server for processing
+
+      console.log('Server side processing taking place');
+
       const processFormData = new FormData();
       processFormData.append('file', audioBlob);
       processFormData.append('isIOS', 'true');
       
-      const response = await fetch('/api/process-audio', {
+      const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}:3000/api/process-audio`, {
         method: 'POST',
         body: processFormData
       });
@@ -31,13 +37,22 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
       } else {
         const processedBlob = await response.blob();
         formData.append('file', processedBlob, 'audio.webm');
+
+        console.log('Server side processing .... completed');
+
       }
     } catch (error) {
       console.error('Server processing failed, falling back to original:', error);
       formData.append('file', audioBlob, `audio.${config.extension}`);
+
+
+      
     }
   } else {
     // Existing code for non-iOS devices
+
+    console.log('Standard processing started ...');
+
     if (audioBlob.size > 25 * 1024 * 1024) {
       console.log('Audio file too large, chunking...');
       const chunkSize = 20 * 1024 * 1024; // 20MB chunks
