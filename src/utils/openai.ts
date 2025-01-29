@@ -15,41 +15,25 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   
   if (isIOSDevice()) {
     try {
-      const audioData = await audioBlob.arrayBuffer();
-      const audioContext = new AudioContext({
-        sampleRate: 16000
+      // Send to server for processing
+      const processFormData = new FormData();
+      processFormData.append('file', audioBlob);
+      processFormData.append('isIOS', 'true');
+      
+      const response = await fetch('/api/process-audio', {
+        method: 'POST',
+        body: processFormData
       });
       
-      const audioBuffer = await audioContext.decodeAudioData(audioData);
-      const processedBuffer = audioContext.createBuffer(
-        1,
-        audioBuffer.length,
-        16000
-      );
-      
-      // Copy and process audio data
-      const channelData = audioBuffer.getChannelData(0);
-      processedBuffer.copyToChannel(channelData, 0);
-      
-      // Convert to correct format
-      const processedBlob = await new Promise<Blob>((resolve) => {
-        const stream = audioContext.createMediaStreamDestination().stream;
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: 'audio/mp4;codecs=mp4a.40.2',
-          audioBitsPerSecond: 16000
-        });
-        
-        const chunks: Blob[] = [];
-        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-        mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/mp4' }));
-        
-        mediaRecorder.start();
-        setTimeout(() => mediaRecorder.stop(), 100);
-      });
-      
-      formData.append('file', processedBlob, `audio.m4a`);
+      if (!response.ok) {
+        console.error('Server processing failed, falling back to original');
+        formData.append('file', audioBlob, `audio.${config.extension}`);
+      } else {
+        const processedBlob = await response.blob();
+        formData.append('file', processedBlob, 'audio.webm');
+      }
     } catch (error) {
-      console.error('iOS audio processing failed, falling back to original:', error);
+      console.error('Server processing failed, falling back to original:', error);
       formData.append('file', audioBlob, `audio.${config.extension}`);
     }
   } else {
