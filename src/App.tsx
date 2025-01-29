@@ -17,6 +17,7 @@ import Record from "./pages/Record";
 import Flows from "./pages/Flows";
 import Settings from "./pages/Settings";
 import Transcripts from "./pages/Transcripts";
+import Test from "./pages/Test";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,11 @@ function App() {
               <Route path="/features" element={
                 <PublicLayout>
                   <Features />
+                </PublicLayout>
+              } />
+              <Route path="/test" element={
+                <PublicLayout>
+                  <Test />
                 </PublicLayout>
               } />
               
