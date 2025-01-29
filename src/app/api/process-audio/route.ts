@@ -1,4 +1,5 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL } from '@ffmpeg/util';
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -13,21 +14,24 @@ export async function POST(request: Request) {
     // Convert to WebM using ffmpeg
     const inputBuffer = await audioFile.arrayBuffer();
     const ffmpeg = new FFmpeg();
-    await ffmpeg.load();
+    await ffmpeg.load({
+      coreURL: await toBlobURL('/ffmpeg-core.js', 'text/javascript'),
+      wasmURL: await toBlobURL('/ffmpeg-core.wasm', 'application/wasm'),
+    });
     
-    ffmpeg.FS('writeFile', 'input.m4a', new Uint8Array(inputBuffer));
+    await ffmpeg.writeFile('input.m4a', new Uint8Array(inputBuffer));
     
-    await ffmpeg.run(
+    await ffmpeg.exec([
       '-i', 'input.m4a',
       '-c:a', 'libopus',
       '-b:a', '16k',
       '-ar', '16000',
       '-ac', '1',
       'output.webm'
-    );
+    ]);
     
-    const data = ffmpeg.FS('readFile', 'output.webm');
-    const processedBlob = new Blob([data.buffer], { type: 'audio/webm' });
+    const data = await ffmpeg.readFile('output.webm');
+    const processedBlob = new Blob([data], { type: 'audio/webm' });
     
     return new Response(processedBlob);
   } catch (error) {
