@@ -1,4 +1,4 @@
-import { createFFmpeg } from '@ffmpeg/ffmpeg';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   try {
     // Convert to WebM using ffmpeg
     const inputBuffer = await audioFile.arrayBuffer();
-    const ffmpeg = createFFmpeg();
+    const ffmpeg = new FFmpeg();
     await ffmpeg.load();
     
     ffmpeg.FS('writeFile', 'input.m4a', new Uint8Array(inputBuffer));
