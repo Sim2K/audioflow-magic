@@ -26,7 +26,7 @@ function getAudioSupport(): { webm: boolean, mp4: boolean } {
     // Test each possible MIME type
     const mimeTypes = {
       webm: ['audio/webm;codecs=opus', 'audio/webm'],
-      mp4: [
+      m4a: [
         'audio/aac',
         'audio/mp4;codecs=aac',
         'audio/mp4;codecs=mp4a.40.2',
