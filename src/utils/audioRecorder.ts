@@ -5,7 +5,7 @@ export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private isRecording: boolean = false;
-  private chunkInterval: number = 2000;
+  private chunkInterval: number = 1000;
   private lastChunkTime: number = 0;
   private mediaStream: MediaStream | null = null;
   private recordingStartTime: number = 0;
