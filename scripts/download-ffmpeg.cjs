@@ -2,9 +2,6 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const __filename = __filename;
-const __dirname = path.dirname(__filename);
-
 const files = [
   {
     url: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
