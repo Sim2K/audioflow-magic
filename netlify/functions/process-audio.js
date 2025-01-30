@@ -2,10 +2,11 @@ const { createFFmpeg } = require('@ffmpeg/ffmpeg');
 const busboy = require('busboy');
 const path = require('path');
 
-// Initialize FFmpeg with local core files
+// Initialize FFmpeg with Node.js compatible core
 const ffmpeg = createFFmpeg({
   log: true,
-  corePath: path.join(__dirname, 'ffmpeg-core.js')
+  mainName: 'main',
+  corePath: require.resolve('@ffmpeg/core')
 });
 
 function parseMultipartForm(event) {
