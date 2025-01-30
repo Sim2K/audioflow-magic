@@ -14,6 +14,14 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/chat/, '')
       },
+
+      // Local API for FFMpeg access
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }, 
+
+      // Netlify functions
       '/.netlify/functions/': {
         target: mode === 'development' 
           ? 'http://localhost:8888'

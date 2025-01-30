@@ -16,7 +16,7 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   console.log('About to choose server or standard!  v1');
   console.log('isIOSDevice check:', isIOSDevice());
   
-  if (isIOSDevice()) {
+  if (!isIOSDevice()) {
     try {
       // Send to server for processing
 
@@ -46,9 +46,6 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
     } catch (error) {
       console.error('Server processing failed, falling back to original:', error);
       formData.append('file', audioBlob, `audio.${config.extension}`);
-
-
-      
     }
   } else {
     // Existing code for non-iOS devices
