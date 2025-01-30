@@ -1,9 +1,8 @@
-import https from 'https';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = __filename;
 const __dirname = path.dirname(__filename);
 
 const files = [
@@ -18,7 +17,15 @@ const files = [
 ];
 
 function download(url, output) {
-  const file = fs.createWriteStream(path.join(__dirname, output));
+  const outputPath = path.join(__dirname, output);
+  const outputDir = path.dirname(outputPath);
+  
+  // Ensure output directory exists
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  const file = fs.createWriteStream(outputPath);
   https.get(url, function(response) {
     response.pipe(file);
     file.on('finish', function() {
@@ -26,7 +33,7 @@ function download(url, output) {
       console.log(`Downloaded ${url} to ${output}`);
     });
   }).on('error', function(err) {
-    fs.unlink(output);
+    fs.unlink(outputPath, () => {});
     console.error(`Error downloading ${url}:`, err.message);
   });
 }

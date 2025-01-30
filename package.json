@@ -12,7 +12,8 @@
     "server": "node server.js",
     "start": "concurrently \"npm run dev\" \"node server.js\"",
     "netlify-dev": "netlify dev",
-    "netlify-build": "npm run build && npm run download-ffmpeg"
+    "netlify-build": "npm run build && npm run download-ffmpeg",
+    "download-ffmpeg": "node scripts/download-ffmpeg.js"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.7",
