@@ -26,16 +26,9 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
       processFormData.append('file', audioBlob);
       processFormData.append('isIOS', 'true');
       
-      
-      // And update the fetch URL section to:
-      const baseUrl = import.meta.env.VITE_API_SERVER_URL;
-      const isLocalhost = baseUrl.includes('localhost');
-      const serverUrl = isLocalhost ? `${baseUrl}:3000` : baseUrl;
-            
-      console.log('Using server URL:', serverUrl);
-            
-      const response = await fetch(`${serverUrl}/api/process-audio`, {
-      //const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}:3000/api/process-audio`, {
+      // In development, the request will be proxied through Vite
+      // In production, it will go directly to the Express server
+      const response = await fetch('/api/process-audio', {
         method: 'POST',
         body: processFormData
       });
