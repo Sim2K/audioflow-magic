@@ -26,9 +26,9 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
       processFormData.append('file', audioBlob);
       processFormData.append('isIOS', 'true');
       
-      // In development, the request will be proxied through Vite
-      // In production, it will go directly to the Express server
-      const response = await fetch('/api/process-audio', {
+      // In development, request will be proxied
+      // In production, it will go to /.netlify/functions/
+      const response = await fetch('/.netlify/functions/process-audio', {
         method: 'POST',
         body: processFormData
       });
