@@ -1,10 +1,11 @@
 const { createFFmpeg } = require('@ffmpeg/ffmpeg');
 const busboy = require('busboy');
+const path = require('path');
 
-// Initialize FFmpeg with CORS settings
+// Initialize FFmpeg with local core files
 const ffmpeg = createFFmpeg({
   log: true,
-  corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+  corePath: path.join(__dirname, 'ffmpeg-core.js')
 });
 
 function parseMultipartForm(event) {

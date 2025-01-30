@@ -5,11 +5,11 @@ const path = require('path');
 const files = [
   {
     url: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
-    output: '../public/ffmpeg-core.js'
+    output: '../netlify/functions/ffmpeg-core.js'
   },
   {
     url: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.wasm',
-    output: '../public/ffmpeg-core.wasm'
+    output: '../netlify/functions/ffmpeg-core.wasm'
   }
 ];
 
