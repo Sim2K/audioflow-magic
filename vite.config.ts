@@ -14,13 +14,14 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/chat/, '')
       },
-      '/api/process-audio': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      },
-      '/api/health': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
+      '/api': {
+        target: mode === 'development' 
+          ? 'http://localhost:3000'
+          : 'http://localhost:8888/.netlify/functions',
+        changeOrigin: true,
+        rewrite: mode === 'development'
+          ? undefined
+          : (path) => path.replace(/^\/api/, '')
       }
     }
   },
