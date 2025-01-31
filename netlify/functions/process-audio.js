@@ -1,101 +1,77 @@
 const { createFFmpeg } = require('@ffmpeg/ffmpeg');
 const busboy = require('busboy');
 const path = require('path');
+const axios = require('axios');  // New dependency for sending requests to Whisper
 
-// Initialize FFmpeg with Node.js compatible core
+// Initialize FFmpeg
 const ffmpeg = createFFmpeg({
   log: true,
-  mainName: 'main',
   corePath: require.resolve('@ffmpeg/core')
 });
 
 function parseMultipartForm(event) {
   return new Promise((resolve, reject) => {
-    const fields = {};
     const buffers = [];
-    
     const bb = busboy({ headers: event.headers });
-    
-    bb.on('file', (name, file, info) => {
-      file.on('data', (data) => {
-        buffers.push(data);
-      });
+
+    bb.on('file', (name, file) => {
+      file.on('data', (data) => buffers.push(data));
     });
-    
-    bb.on('field', (name, val) => {
-      fields[name] = val;
-    });
-    
+
     bb.on('close', () => {
-      resolve({
-        fields,
-        file: Buffer.concat(buffers)
-      });
+      resolve(Buffer.concat(buffers));
     });
-    
+
     bb.on('error', reject);
-    
     bb.write(Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8'));
     bb.end();
   });
 }
 
-exports.handler = async function(event, context) {
+exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      },
       body: 'Method Not Allowed'
     };
   }
 
   try {
-    // Parse the multipart form data
-    const { file } = await parseMultipartForm(event);
-    
-    // Load FFmpeg if not already loaded
+    const file = await parseMultipartForm(event);
+
+    // Convert to webm format (if needed)
     if (!ffmpeg.isLoaded()) {
       await ffmpeg.load();
     }
 
-    // Write input file
     ffmpeg.FS('writeFile', 'input.m4a', file);
-
-    // Run FFmpeg command
     await ffmpeg.run('-i', 'input.m4a', '-c:a', 'libopus', 'output.webm');
+    const processedFile = ffmpeg.FS('readFile', 'output.webm');
 
-    // Read the output file
-    const data = ffmpeg.FS('readFile', 'output.webm');
+    // Prepare the Whisper API request
+    const formData = new FormData();
+    formData.append('file', Buffer.from(processedFile), {
+      filename: 'audio.webm',
+      contentType: 'audio/webm'
+    });
+    formData.append('model', 'whisper-1');
 
-    // Clean up
-    ffmpeg.FS('unlink', 'input.m4a');
-    ffmpeg.FS('unlink', 'output.webm');
+    const whisperResponse = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+      headers: {
+        ...formData.getHeaders(),
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+      }
+    });
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'audio/webm',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      },
-      body: data.toString('base64'),
-      isBase64Encoded: true
+      body: JSON.stringify(whisperResponse.data)
     };
   } catch (error) {
     console.error('Error processing audio:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      },
-      body: JSON.stringify({ 
-        error: 'Failed to process audio',
-        details: error.message 
-      })
+      body: JSON.stringify({ error: 'Audio transcription failed', details: error.message })
     };
   }
 };
