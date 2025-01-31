@@ -1,0 +1,8 @@
+{
+    "version": 2,
+    "functions": {
+      "api/health.js": { "maxDuration": 10 },
+      "api/process-audio.js": { "memory": 512, "maxDuration": 30 },
+      "api/upload.js": { "maxDuration": 20 }
+    }
+  }
