@@ -1,12 +1,15 @@
 import multer from 'multer';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
+import FormData from 'form-data';
+import axios from 'axios';
 
+// Multer config for in-memory file storage
 const upload = multer({ storage: multer.memoryStorage() });
 
 export const config = {
   api: {
-    bodyParser: false, // Needed for Multer
+    bodyParser: false, // Disable default bodyParser for Multer to work
   },
 };
 
@@ -15,29 +18,22 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  // Upload the audio file
   upload.single('file')(req, {}, async (err) => {
     if (err) return res.status(500).json({ error: 'File upload failed' });
 
-    console.log('Received audio processing request:', {
-      isIOS: req.body?.isIOS,
-      fileSize: req.file?.size,
-      mimeType: req.file?.mimetype,
-    });
-
-    const isIOS = req.body?.isIOS === 'true';
-    if (!isIOS || !req.file) {
-      console.log('Returning original file (not iOS or no file)');
-      return res.send(req.file.buffer);
-    }
-
     try {
+      console.log('Processing audio for transcription...');
       const ffmpeg = new FFmpeg();
       await ffmpeg.load({
         coreURL: await toBlobURL('/ffmpeg-core.js', 'text/javascript'),
         wasmURL: await toBlobURL('/ffmpeg-core.wasm', 'application/wasm'),
       });
 
+      // Write uploaded audio to ffmpeg
       await ffmpeg.writeFile('input.m4a', req.file.buffer);
+
+      // Convert audio to webm format
       await ffmpeg.exec([
         '-i', 'input.m4a',
         '-c:a', 'libopus',
@@ -47,12 +43,30 @@ export default async function handler(req, res) {
         'output.webm',
       ]);
 
-      const data = await ffmpeg.readFile('output.webm');
-      res.setHeader('Content-Type', 'audio/webm');
-      res.send(Buffer.from(data));
+      // Read the converted audio
+      const convertedAudio = await ffmpeg.readFile('output.webm');
+
+      // Prepare form data for Whisper API
+      const formData = new FormData();
+      formData.append('file', Buffer.from(convertedAudio), {
+        filename: 'audio.webm',
+        contentType: 'audio/webm',
+      });
+      formData.append('model', 'whisper-1');
+
+      // Send audio to Whisper API
+      const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+        headers: {
+          ...formData.getHeaders(),
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+      });
+
+      // Return the transcript
+      res.status(200).json(response.data);
     } catch (error) {
-      console.error('Audio processing error:', error);
-      res.send(req.file.buffer);
-    }
-  });
+      console.error('Audio processing/transcription error:', error);
+      res.status(500).json({ error: 'Audio transcription failed', details: error.message });
+    }
+  });
 }
