@@ -9,6 +9,7 @@ export interface AudioFormatConfig {
 // Define all supported MIME types for each format
 export const mimeTypes = {
   webm: ['audio/webm;codecs=opus', 'audio/webm'],
+  mp3: ['audio/mp3', 'audio/mpeg'],
   mp4: [
     'audio/aac',
     'audio/mp4;codecs=aac',
@@ -30,6 +31,13 @@ export const formatConfigs = {
     codec: 'aac',
     extension: 'm4a',
     bitrate: 16000,
+    sampleRate: 16000
+  },
+  mp3: {
+    mimeType: 'audio/mpeg',
+    codec: 'mp3',
+    extension: 'mp3',
+    bitrate: 128000,
     sampleRate: 16000
   }
 } as const;
