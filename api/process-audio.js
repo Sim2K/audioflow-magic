@@ -1,20 +1,12 @@
 import multer from 'multer';
-import path from 'path';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static'; // Static binary
-import stream from 'stream';
-import FormData from 'form-data';
-import axios from 'axios';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL } from '@ffmpeg/util';
 
-// Multer config for in-memory file storage
 const upload = multer({ storage: multer.memoryStorage() });
-
-// Resolve to the correct location during runtime
-const ffmpegPath = path.resolve(ffmpegStatic);
 
 export const config = {
   api: {
-    bodyParser: false, // Disable default bodyParser for Multer to work
+    bodyParser: false, // Needed for Multer
   },
 };
 
@@ -26,63 +18,41 @@ export default async function handler(req, res) {
   upload.single('file')(req, {}, async (err) => {
     if (err) return res.status(500).json({ error: 'File upload failed' });
 
-    try {
-      console.log('Received audio for transcription, processing with FFmpeg...');
+    console.log('Received audio processing request server side!:', {
+      isIOS: req.body?.isIOS,
+      fileSize: req.file?.size,
+      mimeType: req.file?.mimetype,
+    });
 
-      // Set ffmpeg path from ffmpeg-static
-      //ffmpeg.setFfmpegPath(ffmpegStatic);
-
-      // Set FFmpeg path for fluent-ffmpeg
-ffmpeg.setFfmpegPath(ffmpegPath);
-
-      // Convert in-memory file to webm using fluent-ffmpeg
-      const outputBuffer = await convertToWebm(req.file.buffer);
-
-      // Prepare form data for Whisper API
-      const formData = new FormData();
-      formData.append('file', outputBuffer, {
-        filename: 'audio.webm',
-        contentType: 'audio/webm',
-      });
-      formData.append('model', 'whisper-1');
-
-      // Send to Whisper API
-      const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
-        headers: {
-          ...formData.getHeaders(),
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-      });
-
-      // Return the Whisper transcript
-      res.status(200).json(response.data);
-    } catch (error) {
-      console.error('Audio transcription failed:', error);
-      res.status(500).json({ error: 'Audio transcription failed', details: error.message });
+    const isIOS = req.body?.isIOS === 'true';
+    if (!isIOS || !req.file) {
+      console.log('Returning original file (not iOS or no file)');
+      return res.send(req.file.buffer);
     }
-  });
-}
 
-// Function to convert audio to webm using fluent-ffmpeg
-function convertToWebm(inputBuffer) {
-  return new Promise((resolve, reject) => {
-    const outputStream = new stream.PassThrough();
-    const inputStream = new stream.PassThrough();
-    inputStream.end(inputBuffer);
+    try {
+      const ffmpeg = new FFmpeg();
+      await ffmpeg.load({
+        coreURL: await toBlobURL('/ffmpeg-core.js', 'text/javascript'),
+        wasmURL: await toBlobURL('/ffmpeg-core.wasm', 'application/wasm'),
+      });
 
-    const chunks = [];
-    outputStream.on('data', (chunk) => chunks.push(chunk));
-    outputStream.on('end', () => resolve(Buffer.concat(chunks)));
-    outputStream.on('error', reject);
+      await ffmpeg.writeFile('input.m4a', req.file.buffer);
+      await ffmpeg.exec([
+        '-i', 'input.m4a',
+        '-c:a', 'libopus',
+        '-b:a', '16k',
+        '-ar', '16000',
+        '-ac', '1',
+        'output.webm',
+      ]);
 
-    ffmpeg(inputStream)
-      .inputFormat('m4a')
-      .audioCodec('libopus')
-      .audioBitrate(16)
-      .audioChannels(1)
-      .audioFrequency(16000)
-      .format('webm')
-      .on('error', reject)
-      .pipe(outputStream, { end: true });
-  });
+      const data = await ffmpeg.readFile('output.webm');
+      res.setHeader('Content-Type', 'audio/webm');
+      res.send(Buffer.from(data));
+    } catch (error) {
+      console.error('Audio processing error:', error);
+      res.send(req.file.buffer);
+    }
+  });
 }
