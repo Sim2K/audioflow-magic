@@ -1,9 +1,6 @@
 import multer from 'multer';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
-import axios from 'axios';
-import FormData from 'form-data';
-import stream from 'stream';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL } from '@ffmpeg/util';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -34,56 +31,28 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Convert the uploaded audio to webm using fluent-ffmpeg
-      const outputBuffer = await convertToWebm(req.file.buffer);
-
-      // Prepare form data for Whisper API
-      const formData = new FormData();
-      formData.append('file', outputBuffer, {
-        filename: 'audio.webm',
-        contentType: 'audio/webm',
-      });
-      formData.append('model', 'whisper-1');
-
-      // Send to Whisper API for transcription
-      const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
-        headers: {
-          ...formData.getHeaders(),
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
+      const ffmpeg = new FFmpeg();
+      await ffmpeg.load({
+        coreURL: await toBlobURL('/ffmpeg-core.js', 'text/javascript'),
+        wasmURL: await toBlobURL('/ffmpeg-core.wasm', 'application/wasm'),
       });
 
-      // Return the JSON response from Whisper
-      res.status(200).json(response.data);
+      await ffmpeg.writeFile('input.m4a', req.file.buffer);
+      await ffmpeg.exec([
+        '-i', 'input.m4a',
+        '-c:a', 'libopus',
+        '-b:a', '16k',
+        '-ar', '16000',
+        '-ac', '1',
+        'output.webm',
+      ]);
+
+      const data = await ffmpeg.readFile('output.webm');
+      res.setHeader('Content-Type', 'audio/webm');
+      res.send(Buffer.from(data));
     } catch (error) {
-      console.error('Audio processing/transcription error:', error);
-      res.status(500).json({ error: 'Audio transcription failed', details: error.message });
+      console.error('Audio processing error:', error);
+      res.send(req.file.buffer);
     }
-  });
-}
-
-// Function to convert audio to webm using fluent-ffmpeg
-function convertToWebm(inputBuffer) {
-  return new Promise((resolve, reject) => {
-    const inputStream = new stream.PassThrough();
-    const outputStream = new stream.PassThrough();
-    const chunks = [];
-
-    inputStream.end(inputBuffer);
-
-    outputStream.on('data', (chunk) => chunks.push(chunk));
-    outputStream.on('end', () => resolve(Buffer.concat(chunks)));
-    outputStream.on('error', reject);
-
-    ffmpeg(inputStream)
-      .setFfmpegPath(ffmpegStatic) // Use static FFmpeg binary
-      .inputFormat('m4a')
-      .audioCodec('libopus')
-      .audioBitrate('16k')
-      .audioChannels(1)
-      .audioFrequency(16000)
-      .format('webm')
-      .on('error', reject)
-      .pipe(outputStream, { end: true });
   });
 }
