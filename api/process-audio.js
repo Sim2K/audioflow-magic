@@ -1,4 +1,5 @@
 import multer from 'multer';
+import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static'; // Static binary
 import stream from 'stream';
@@ -7,6 +8,9 @@ import axios from 'axios';
 
 // Multer config for in-memory file storage
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Resolve to the correct location during runtime
+const ffmpegPath = path.resolve(ffmpegStatic);
 
 export const config = {
   api: {
@@ -26,7 +30,10 @@ export default async function handler(req, res) {
       console.log('Received audio for transcription, processing with FFmpeg...');
 
       // Set ffmpeg path from ffmpeg-static
-      ffmpeg.setFfmpegPath(ffmpegStatic);
+      //ffmpeg.setFfmpegPath(ffmpegStatic);
+
+      // Set FFmpeg path for fluent-ffmpeg
+ffmpeg.setFfmpegPath(ffmpegPath);
 
       // Convert in-memory file to webm using fluent-ffmpeg
       const outputBuffer = await convertToWebm(req.file.buffer);
