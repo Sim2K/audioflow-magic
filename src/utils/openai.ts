@@ -16,6 +16,75 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   console.log('About to choose server or standard!  v1');
   console.log('isIOSDevice check:', isIOSDevice());
   
+  /*
+  if (!isIOSDevice()) {
+    try {
+      // Send to server for processing
+
+      console.log('Server side processing taking place');
+
+      const processFormData = new FormData();
+      processFormData.append('file', audioBlob);
+      processFormData.append('isIOS', 'true');
+      
+      // In development, request will be proxied
+      // In production, it will go to /.netlify/functions/
+      console.log('POSTing file to the API');
+      const response = await fetch('/api/process-audio', {
+        method: 'POST',
+        body: processFormData
+      });
+      
+      if (!response.ok) {
+        console.error('Server processing failed, falling back to original');
+        formData.append('file', audioBlob, `audio.${config.extension}`);
+      } else {
+        const processedBlob = await response.blob();
+        //formData.append('file', processedBlob, 'audio.webm');
+        formData.append('file', processedBlob, 'audio.mp3');
+
+        console.log('Server side processing .... completed');
+
+      }
+    } catch (error) {
+      console.error('Server processing failed, falling back to original:', error);
+      formData.append('file', audioBlob, `audio.${config.extension}`);
+    }
+  */
+  //} else {
+    // Existing code for non-iOS devices
+
+    console.log('Standard (and only) processing started ... config.extension-> ', config.extension);
+
+    if (audioBlob.size > 25 * 1024 * 1024) {
+      console.log('Audio file too large, chunking...');
+      const chunkSize = 20 * 1024 * 1024; // 20MB chunks
+      const chunks = Math.ceil(audioBlob.size / chunkSize);
+      
+      for (let i = 0; i < chunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, audioBlob.size);
+        const chunk = audioBlob.slice(start, end, `${config.mimeType};codecs=${config.codec}`);
+        formData.append('file', chunk, `chunk_${i}.${config.extension}`);
+      }
+    } else {
+      formData.append('file', audioBlob, `audio.${config.extension}`);
+    }
+  //}
+  
+  formData.append('model', 'whisper-1');
+  formData.append('language', 'en');
+  
+  return formData;
+}
+
+async function prepareAudioForUpload_BACKUP(audioBlob: Blob, format: SupportedFormat): Promise<FormData> {
+  const formData = new FormData();
+  const config = formatConfigs[format];
+
+  console.log('About to choose server or standard!  v1');
+  console.log('isIOSDevice check:', isIOSDevice());
+  
   if (!isIOSDevice()) {
     try {
       // Send to server for processing
