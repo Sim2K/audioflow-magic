@@ -9,7 +9,8 @@ interface WhisperResponse {
   text: string;
 }
 
-async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): Promise<FormData> {
+// Backed up just incase
+async function prepareAudioForUpload_BACKUP(audioBlob: Blob, format: SupportedFormat): Promise<FormData> {
   const formData = new FormData();
   const config = formatConfigs[format];
 
@@ -74,7 +75,36 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   return formData;
 }
 
-export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ transcript: string; processedResponse: any }> {
+async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): Promise<FormData> {
+  const formData = new FormData();
+  const config = formatConfigs[format];
+
+  console.log('Standard processing started ...');
+
+  // Only need the standard processing here since iOS is handled in transcribeAudio
+  if (audioBlob.size > 25 * 1024 * 1024) {
+    console.log('Audio file too large, chunking...');
+    const chunkSize = 20 * 1024 * 1024; // 20MB chunks
+    const chunks = Math.ceil(audioBlob.size / chunkSize);
+    
+    for (let i = 0; i < chunks; i++) {
+      const start = i * chunkSize;
+      const end = Math.min(start + chunkSize, audioBlob.size);
+      const chunk = audioBlob.slice(start, end, `${config.mimeType};codecs=${config.codec}`);
+      formData.append('file', chunk, `chunk_${i}.${config.extension}`);
+    }
+  } else {
+    formData.append('file', audioBlob, `audio.${config.extension}`);
+  }
+  
+  formData.append('model', 'whisper-1');
+  formData.append('language', 'en');
+  
+  return formData;
+}
+
+// Backed up just incase
+export async function transcribeAudio_BACKUP(audioBlob: Blob, flow: Flow): Promise<{ transcript: string; processedResponse: any }> {
   const apiKey = localStorage.getItem(StorageKeys.OPENAI_API_KEY);
   if (!apiKey) {
     throw new Error('OpenAI API key not found');
@@ -124,6 +154,82 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     console.error('Transcription error details:', error);
     throw error;
   }
+}
+
+export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ transcript: string; processedResponse: any }> {
+  const apiKey = localStorage.getItem(StorageKeys.OPENAI_API_KEY);
+  if (!apiKey) {
+    throw new Error('OpenAI API key not found');
+  }
+
+  let transcript = '';
+
+  console.log('Starting transcription with blob:', {
+    size: audioBlob.size,
+    type: audioBlob.type
+  });
+
+  if (isIOSDevice()) {
+    // iOS branch: Use the Netlify function to process the audio
+    console.log('Detected iOS device – routing audio to /api/process-audio');
+    const processFormData = new FormData();
+    processFormData.append('file', audioBlob);
+    processFormData.append('isIOS', 'true');
+
+    // Call the server-side function that uses ffmpeg and calls Whisper
+    const response = await fetch('/api/process-audio', {
+      method: 'POST',
+      body: processFormData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Audio processing via server failed with status ${response.status}`);
+    }
+
+    // The server is expected to return JSON containing the transcript
+    const data = await response.json();
+    if (!data.text) {
+      throw new Error('No transcript returned from the server');
+    }
+    transcript = data.text.trim();
+    console.log('Transcript received from server:', transcript);
+  } else {
+    // Non‑iOS branch: Prepare FormData as before and send directly to OpenAI’s endpoint
+    const format: SupportedFormat = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
+    const formData = await prepareAudioForUpload(audioBlob, format);
+    
+    console.log('Sending audio directly to OpenAI transcription API');
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Transcription failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    const result: { text: string } = await response.json();
+    transcript = result.text.trim();
+    console.log('Transcript received from OpenAI:', transcript);
+  }
+
+  // Now process the transcript with your GPT‑4 flow
+  const processedResponse = await processTranscriptionResponse(transcript, flow);
+
+  return {
+    transcript,
+    processedResponse
+  };
 }
 
 async function convertToMp3(audioBuffer: AudioBuffer): Promise<Blob> {

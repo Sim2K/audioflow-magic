@@ -10,7 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "server": "node server.js",
-    "start": "concurrently \"npm run dev\" \"node server.js\"",
+    "start": "concurrently \"npm run dev\"",
     "netlify-dev": "netlify dev",
     "netlify-build": "npm run build && npm run download-ffmpeg",
     "download-ffmpeg": "node scripts/download-ffmpeg.cjs"

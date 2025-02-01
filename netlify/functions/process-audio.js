@@ -2,6 +2,7 @@ const { createFFmpeg } = require('@ffmpeg/ffmpeg');
 const busboy = require('busboy');
 const path = require('path');
 const axios = require('axios');  // New dependency for sending requests to Whisper
+const FormData = require('form-data');
 
 // Initialize FFmpeg
 const ffmpeg = createFFmpeg({
