@@ -169,7 +169,7 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     type: audioBlob.type
   });
 
-  if (isIOSDevice()) {
+  if (!isIOSDevice()) {
     // iOS branch: Use the Netlify function to process the audio
     console.log('Detected iOS device – routing audio to /api/process-audio');
     const processFormData = new FormData();
