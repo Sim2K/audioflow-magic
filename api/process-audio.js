@@ -1,5 +1,6 @@
 import multer from 'multer';
 import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static'; // Static binary
 import stream from 'stream';
 import FormData from 'form-data';
 import axios from 'axios';
@@ -23,6 +24,9 @@ export default async function handler(req, res) {
 
     try {
       console.log('Received audio for transcription, processing with FFmpeg...');
+
+      // Set ffmpeg path from ffmpeg-static
+      ffmpeg.setFfmpegPath(ffmpegStatic);
 
       // Convert in-memory file to webm using fluent-ffmpeg
       const outputBuffer = await convertToWebm(req.file.buffer);
