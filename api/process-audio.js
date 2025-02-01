@@ -1,8 +1,9 @@
 import multer from 'multer';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { toBlobURL } from '@ffmpeg/util';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
 import FormData from 'form-data';
+import stream from 'stream';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -33,31 +34,12 @@ export default async function handler(req, res) {
     }
 
     try {
-      const ffmpeg = new FFmpeg();
-      await ffmpeg.load({
-        coreURL: await toBlobURL('/ffmpeg-core.js', 'text/javascript'),
-        wasmURL: await toBlobURL('/ffmpeg-core.wasm', 'application/wasm'),
-      });
-
-      // Write uploaded file to ffmpeg virtual filesystem
-      await ffmpeg.writeFile('input.m4a', req.file.buffer);
-
-      // Convert the audio to webm format
-      await ffmpeg.exec([
-        '-i', 'input.m4a',
-        '-c:a', 'libopus',
-        '-b:a', '16k',
-        '-ar', '16000',
-        '-ac', '1',
-        'output.webm',
-      ]);
-
-      // Read the converted audio data
-      const data = await ffmpeg.readFile('output.webm');
+      // Convert the uploaded audio to webm using fluent-ffmpeg
+      const outputBuffer = await convertToWebm(req.file.buffer);
 
       // Prepare form data for Whisper API
       const formData = new FormData();
-      formData.append('file', Buffer.from(data), {
+      formData.append('file', outputBuffer, {
         filename: 'audio.webm',
         contentType: 'audio/webm',
       });
@@ -77,5 +59,31 @@ export default async function handler(req, res) {
       console.error('Audio processing/transcription error:', error);
       res.status(500).json({ error: 'Audio transcription failed', details: error.message });
     }
+  });
+}
+
+// Function to convert audio to webm using fluent-ffmpeg
+function convertToWebm(inputBuffer) {
+  return new Promise((resolve, reject) => {
+    const inputStream = new stream.PassThrough();
+    const outputStream = new stream.PassThrough();
+    const chunks = [];
+
+    inputStream.end(inputBuffer);
+
+    outputStream.on('data', (chunk) => chunks.push(chunk));
+    outputStream.on('end', () => resolve(Buffer.concat(chunks)));
+    outputStream.on('error', reject);
+
+    ffmpeg(inputStream)
+      .setFfmpegPath(ffmpegStatic) // Use static FFmpeg binary
+      .inputFormat('m4a')
+      .audioCodec('libopus')
+      .audioBitrate('16k')
+      .audioChannels(1)
+      .audioFrequency(16000)
+      .format('webm')
+      .on('error', reject)
+      .pipe(outputStream, { end: true });
   });
 }
