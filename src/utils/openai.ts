@@ -52,7 +52,7 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
   } else {
     // Existing code for non-iOS devices
 
-    console.log('Standard processing started ...');
+    console.log('Standard processing started ... config.extension-> ', config.extension);
 
     if (audioBlob.size > 25 * 1024 * 1024) {
       console.log('Audio file too large, chunking...');
