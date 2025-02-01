@@ -28,6 +28,7 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
       
       // In development, request will be proxied
       // In production, it will go to /.netlify/functions/
+      console.log('POSTing file to the API');
       const response = await fetch('/api/process-audio', {
         method: 'POST',
         body: processFormData
@@ -38,7 +39,8 @@ async function prepareAudioForUpload(audioBlob: Blob, format: SupportedFormat): 
         formData.append('file', audioBlob, `audio.${config.extension}`);
       } else {
         const processedBlob = await response.blob();
-        formData.append('file', processedBlob, 'audio.webm');
+        //formData.append('file', processedBlob, 'audio.webm');
+        formData.append('file', processedBlob, 'audio.mp3');
 
         console.log('Server side processing .... completed');
 
@@ -87,7 +89,8 @@ export async function transcribeAudio(audioBlob: Blob, flow: Flow): Promise<{ tr
     });
 
     // Create FormData
-    const format: SupportedFormat = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
+    //const format: SupportedFormat = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
+    const format: SupportedFormat = audioBlob.type.includes('mp3') ? 'mp3' : 'mp4';
     const formData = await prepareAudioForUpload(audioBlob, format);
     
     console.log('Sending request to OpenAI');
