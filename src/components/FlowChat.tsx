@@ -143,7 +143,7 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
                 <textarea
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Type your message..."
+                    placeholder="Type your message... *hint: You can ask for the AI to update the form with your own instructions by saying 'Please complete my Flow form' once you have given it enough details of course."
                     disabled={isLoading}
                     aria-label="Chat message"
                     rows={3}

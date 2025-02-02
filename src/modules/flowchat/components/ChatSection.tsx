@@ -253,7 +253,7 @@ I need to make some improvements to the flow. Please analyse it in painstaking d
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="Type your message..."
+          placeholder="Type your message... *hint: You can ask for the AI to update the form with your own instructions by saying 'Please complete my Flow form' once you have given it enough details of course."
           className="flex-1"
           disabled={isLoading}
         />
