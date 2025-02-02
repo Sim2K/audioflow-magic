@@ -5,6 +5,21 @@ import { isIOSDevice } from './audioFormatDetector';
 
 const DEFAULT_COMPLETION_ENDPOINT = 'v1/completions';
 
+// Get current date and time in the required format: YYYY-MM-DD HH:mm:ss
+const getCurrentDateTime = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // Ensure two-digit format
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+// Capture current date and time
+const currentDateTime = getCurrentDateTime();
+
 interface WhisperResponse {
   text: string;
 }
@@ -286,7 +301,10 @@ async function processTranscriptionResponse(transcript: string, flow: Flow): Pro
           role: "user",
           content: [
             {
-              text: `Read the {Instructions} which will instruct you on how to work with the given {transcript}. Respond using the format shown in the {JSON Template} and add at the top of the {JSON Template} a generated title based on the contents of the {JSON Template} and the key pair holding that data will look like this, "theFlowTitle": " ... a title representing the contents of the {JSON Template} ...". This will sit at the start of every JSON response object and be named "theFlowTitle". "theFlowTitle" will be independent of any details in the {JSON Template}, for example, if 'title' exists in the {JSON Template}, then both 'title' and 'theFlowTitle' will be shown.
+              text: `Read the {Instructions} which will instruct you on how to work with the given {transcript}. Respond using the format shown in the {JSON Template} and add at the top of the {JSON Template} a generated title based on the contents of the {JSON Template} and the key pair holding that data will look like this, "theFlowTitle": " ... a title representing the contents of the {JSON Template} ...". This will sit at the start of every JSON response object and be named "theFlowTitle". "theFlowTitle" will be independent of any details in the {JSON Template}, for example, if 'title' exists in the {JSON Template}, then both 'title' and 'theFlowTitle' will be shown. Also add in a key pair holding data which will look like this, "TimeRecorded": "2025-12-31 14:25:30". This will sit under theFlowTitle and be named "TimeRecorded" and will be independent of any details in the {JSON Template}.
+
+Date and Time recorded:
+${currentDateTime}
 
 Instructions:
 ${flow.prompt}
